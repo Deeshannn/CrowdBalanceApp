@@ -1,5 +1,6 @@
 import React from 'react'
 import Login from './auth/LoginScreen/index';
+import Register from './auth/RegisterScreen/index';
 
 const Index = () => {
   const handleLogin = (role, credentials) => {
@@ -8,7 +9,9 @@ const Index = () => {
     // For example: router.push('/dashboard');
   };
 
-  return <Login onLogin={handleLogin} />
+  // return <Login onLogin={handleLogin} />
+  return <Register onLogin={handleLogin} />
+
 }
 
 export default Index;

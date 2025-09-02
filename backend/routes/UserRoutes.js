@@ -12,10 +12,12 @@ const {
     updateOrganizer,
     updateMainPanel,
     deleteUser,
+    registerUser,
     loginUser
 } = require("../controllers/UserController");
 
 // Authentication route (should be first)
+router.post("/register", registerUser);
 router.post("/login", loginUser); // POST /users/login - User login
 
 // Specific routes BEFORE generic routes to avoid conflicts
