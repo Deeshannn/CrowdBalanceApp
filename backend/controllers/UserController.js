@@ -330,11 +330,11 @@ const registerUser = async (req, res) => {
 
 // Login controller function
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { gmail, password } = req.body;
 
   try {
     // Search in the User collection
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email: gmail });
 
     if (!user) {
       return res.json({ err: "User not found" });

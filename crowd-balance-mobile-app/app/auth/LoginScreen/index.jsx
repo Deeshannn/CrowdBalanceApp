@@ -8,10 +8,14 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  Image,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+
+// You'll need to update this import path based on your asset location
+// import EngExLogo from "../../../assets/images/EngEx-logo.png";
 
 const Login = () => {
   const [role, setRole] = useState("organizer");
@@ -31,12 +35,13 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post("http://10.30.14.167/login", {
+      const response = await axios.post("http://10.30.14.167:4000/users/login", {
         gmail: String(user.gmail),
         password: String(user.password),
       });
 
       const data = response.data;
+      console.log("Login response:", data);
 
       if (data.status === "ok") {
         // Store user data in AsyncStorage
@@ -53,6 +58,7 @@ const Login = () => {
         Alert.alert("Login Failed", data.err || "Invalid credentials");
       }
     } catch (err) {
+      console.error("Login error:", err);
       Alert.alert("Login Failed", err.message || "Something went wrong");
     }
   };
@@ -73,11 +79,15 @@ const Login = () => {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <View style={styles.logoPlaceholder}>
+                {/* Uncomment when you have the logo */}
+                {/* <Image
+                  source={EngExLogo}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                /> */}
                 <Text style={styles.logoText}>ENGEX</Text>
               </View>
             </View>
-            <Text style={styles.title}>ENGEX Control</Text>
-            <Text style={styles.subtitle}>Crowd Management & Alert System</Text>
           </View>
 
           {/* Form */}
@@ -152,7 +162,7 @@ const Login = () => {
 
           {/* Navigate to Registration Page */}
           <View style={styles.loginLinkContainer}>
-            <Text style={styles.loginText}> Not registered yet? </Text>
+            <Text style={styles.loginText}>Not registered yet? </Text>
             <TouchableOpacity onPress={navigateToRegister}>
               <Text style={styles.signUpText}>SignUp</Text>
             </TouchableOpacity>
@@ -179,21 +189,22 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: 24 },
   logoContainer: { marginBottom: 16 },
   logoPlaceholder: {
-    width: 80,
+    width: 100,
     height: 80,
     backgroundColor: "#1e40af",
-    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
+    borderRadius: 20,
   },
-  logoText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  title: {
-    fontSize: 24,
+  logoImage: {
+    width: 80,
+    height: 80,
+  },
+  logoText: {
+    color: "white",
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#1f2937",
-    marginBottom: 8,
   },
-  subtitle: { fontSize: 16, color: "#6b7280", textAlign: "center" },
   form: { marginBottom: 24 },
   formGroup: { marginBottom: 20 },
   label: { fontSize: 16, fontWeight: "600", color: "#374151", marginBottom: 8 },
