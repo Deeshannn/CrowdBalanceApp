@@ -4,7 +4,9 @@ function RootLayout() {
   console.log("RootLayout rendered");
   
   return (
-    <Stack>
+    <Stack screenOptions={{
+        headerShown: false, // This removes the "auth" header
+      }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="auth/LoginScreen/index" options={{ headerShown: false }} />
       <Stack.Screen name="auth/RegisterScreen/index" options={{ headerShown: false }} />

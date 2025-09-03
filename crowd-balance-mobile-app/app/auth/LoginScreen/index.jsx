@@ -13,6 +13,9 @@ import {
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { Stack } from "expo-router";
+
+import EngExLogo from "../../../assets/images/EngEx-logo.png";
 
 const Login = () => {
   const [role, setRole] = useState("organizer");
@@ -49,14 +52,17 @@ const Login = () => {
         await AsyncStorage.setItem("userName", data.name);
         await AsyncStorage.setItem("userType", data.userType);
         await AsyncStorage.setItem("isLoggedIn", "true");
-        
+
         // Store the complete user data to avoid network call in dashboard
-        await AsyncStorage.setItem("userData", JSON.stringify({
-          id: data.userId,
-          name: data.name,
-          userType: data.userType,
-          assignedHall: data.assignedHall || null
-        }));
+        await AsyncStorage.setItem(
+          "userData",
+          JSON.stringify({
+            id: data.userId,
+            name: data.name,
+            userType: data.userType,
+            assignedHall: data.assignedHall || null,
+          })
+        );
 
         Alert.alert("Success", "Login Successful");
 
@@ -64,7 +70,6 @@ const Login = () => {
         setTimeout(() => {
           router.replace("/dashboard");
         }, 100);
-
       } else {
         Alert.alert("Login Failed", data.err || "Invalid credentials");
       }
@@ -85,74 +90,90 @@ const Login = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoPlaceholder}>
-                <Text style={styles.logoText}>ENGEX</Text>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.card}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <View style={styles.logoPlaceholder}>
+                  <Image
+                    source={EngExLogo}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            {/* Email Input */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={user.gmail}
-                onChangeText={(text) => handleInputChange("gmail", text)}
-                placeholder={
-                  role === "panel" ? "panel@engex.com" : "organizer@engex.com"
-                }
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
+            {/* Form */}
+            <View style={styles.form}>
+              {/* Email Input */}
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={user.gmail}
+                  onChangeText={(text) => handleInputChange("gmail", text)}
+                  placeholder={
+                    role === "panel" ? "panel@engex.com" : "organizer@engex.com"
+                  }
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+
+              {/* Password Input */}
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={user.password}
+                  onChangeText={(text) => handleInputChange("password", text)}
+                  placeholder="Enter your password"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                />
+              </View>
+
+              {/* Login Button */}
+              <TouchableOpacity
+                style={[
+                  styles.loginButton,
+                  isLoading && styles.loginButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={isLoading}
+              >
+                <Text style={styles.loginButtonText}>
+                  {isLoading
+                    ? "Logging in..."
+                    : `Login`}
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Password Input */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                value={user.password}
-                onChangeText={(text) => handleInputChange("password", text)}
-                placeholder="Enter your password"
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
+            {/* Navigate to Registration Page */}
+            <View style={styles.loginLinkContainer}>
+              <Text style={styles.loginText}>Not registered yet? </Text>
+              <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+                <Text
+                  style={[styles.signUpText, isLoading && styles.disabledText]}
+                >
+                  SignUp
+                </Text>
+              </TouchableOpacity>
             </View>
-
-            {/* Login Button */}
-            <TouchableOpacity 
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
-              onPress={handleSubmit}
-              disabled={isLoading}
-            >
-              <Text style={styles.loginButtonText}>
-                {isLoading ? "Logging in..." : `Login as ${role === "panel" ? "Main Panel" : "Organizer"}`}
-              </Text>
-            </TouchableOpacity>
           </View>
-
-          {/* Navigate to Registration Page */}
-          <View style={styles.loginLinkContainer}>
-            <Text style={styles.loginText}>Not registered yet? </Text>
-            <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
-              <Text style={[styles.signUpText, isLoading && styles.disabledText]}>SignUp</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 };
 
