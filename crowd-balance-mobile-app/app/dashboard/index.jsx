@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -49,6 +55,12 @@ const Dashboard = () => {
     );
   }
 
+  const handleReportMissing = () => {
+    router.push('/GetLostInfo');
+  };
+
+
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -57,6 +69,28 @@ const Dashboard = () => {
         {user.userType === "Organizer" && user.assignedHall && (
           <Text style={styles.hallInfo}>Hall: {user.assignedHall}</Text>
         )}
+      </View>
+
+      {/* <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.alertIcon}>🚨</Text>
+          <View>
+            <Text style={styles.title}>New Missing Person</Text>
+            <Text style={styles.subtitle}>
+              Fill in the details below. This will notify all staff immediately.
+            </Text>
+          </View>
+        </View>
+      </View> */}
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={styles.emergencyButton}
+          onPress={handleReportMissing}
+        >
+          <Text style={styles.emergencyButtonText}>
+            🚨 Report Missing Person
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.buttonContainer}>
@@ -72,8 +106,8 @@ const Dashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: "#f9fafb",
     padding: 20,
   },
@@ -100,14 +134,14 @@ const styles = StyleSheet.create({
     elevation: 3,
     alignItems: "center",
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: "bold", 
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
     color: "#1f2937",
     marginBottom: 8,
   },
-  subtitle: { 
-    fontSize: 18, 
+  subtitle: {
+    fontSize: 18,
     color: "#6b7280",
     marginBottom: 8,
   },
@@ -115,6 +149,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1e40af",
     fontWeight: "600",
+  },
+  emergencyButton: {
+    backgroundColor: "#1e40af",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  emergencyButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     flex: 1,
@@ -127,9 +178,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 20,
   },
-  buttonText: { 
-    color: "white", 
-    fontSize: 16, 
+  buttonText: {
+    color: "white",
+    fontSize: 16,
     fontWeight: "600",
   },
 });

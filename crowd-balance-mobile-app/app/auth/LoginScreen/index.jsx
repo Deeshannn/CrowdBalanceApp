@@ -92,35 +92,6 @@ const Login = () => {
 
           {/* Form */}
           <View style={styles.form}>
-            {/* Role Selection */}
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Login as</Text>
-              <View style={styles.radioGroup}>
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => handleRoleChange("organizer")}
-                >
-                  <View style={styles.radioButton}>
-                    {role === "organizer" && (
-                      <View style={styles.radioButtonSelected} />
-                    )}
-                  </View>
-                  <Text style={styles.radioLabel}>Organizer</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.radioOption}
-                  onPress={() => handleRoleChange("panel")}
-                >
-                  <View style={styles.radioButton}>
-                    {role === "panel" && (
-                      <View style={styles.radioButtonSelected} />
-                    )}
-                  </View>
-                  <Text style={styles.radioLabel}>Main Panel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
 
             {/* Email Input */}
             <View style={styles.formGroup}>
