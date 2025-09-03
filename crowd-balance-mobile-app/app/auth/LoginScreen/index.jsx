@@ -9,24 +9,51 @@ import {
   SafeAreaView,
   Alert,
 } from "react-native";
-
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
-const Login = ({ onLogin, onNavigateRegister }) => {
+const Login = () => {
   const [role, setRole] = useState("organizer");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [user, setUser] = useState({
+    gmail: "",
+    password: "",
+  });
 
-  const handleSubmit = () => {
-    if (!email || !password) {
+  const handleInputChange = (name, value) => {
+    setUser((prevUser) => ({ ...prevUser, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!user.gmail || !user.password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
-    if (onLogin) {
-      onLogin(role, { email, password });
-    } else {
-      Alert.alert("Success", `Logging in as ${role}`);
+    try {
+      const response = await axios.post("http://10.30.14.167/login", {
+        gmail: String(user.gmail),
+        password: String(user.password),
+      });
+
+      const data = response.data;
+
+      if (data.status === "ok") {
+        // Store user data in AsyncStorage
+        await AsyncStorage.setItem("userId", data.userId);
+        await AsyncStorage.setItem("userName", data.name);
+        await AsyncStorage.setItem("userType", data.userType);
+        await AsyncStorage.setItem("isLoggedIn", "true");
+
+        Alert.alert("Success", "Login Successful");
+
+        // Navigate to dashboard
+        router.replace("/dashboard");
+      } else {
+        Alert.alert("Login Failed", data.err || "Invalid credentials");
+      }
+    } catch (err) {
+      Alert.alert("Login Failed", err.message || "Something went wrong");
     }
   };
 
@@ -90,8 +117,8 @@ const Login = ({ onLogin, onNavigateRegister }) => {
               <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
-                value={email}
-                onChangeText={setEmail}
+                value={user.gmail}
+                onChangeText={(text) => handleInputChange("gmail", text)}
                 placeholder={
                   role === "panel" ? "panel@engex.com" : "organizer@engex.com"
                 }
@@ -106,8 +133,8 @@ const Login = ({ onLogin, onNavigateRegister }) => {
               <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
-                value={password}
-                onChangeText={setPassword}
+                value={user.password}
+                onChangeText={(text) => handleInputChange("password", text)}
                 placeholder="Enter your password"
                 secureTextEntry
                 autoCapitalize="none"
@@ -137,15 +164,8 @@ const Login = ({ onLogin, onNavigateRegister }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1e40af",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: "#1e40af" },
+  scrollContent: { flexGrow: 1, justifyContent: "center", padding: 16 },
   card: {
     backgroundColor: "white",
     borderRadius: 12,
@@ -156,13 +176,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  logoContainer: {
-    marginBottom: 16,
-  },
+  header: { alignItems: "center", marginBottom: 24 },
+  logoContainer: { marginBottom: 16 },
   logoPlaceholder: {
     width: 80,
     height: 80,
@@ -171,43 +186,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  logoText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  logoText: { color: "white", fontSize: 18, fontWeight: "bold" },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#1f2937",
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    color: "#6b7280",
-    textAlign: "center",
-  },
-  form: {
-    marginBottom: 24,
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  radioGroup: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 24,
-  },
-  radioOption: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  subtitle: { fontSize: 16, color: "#6b7280", textAlign: "center" },
+  form: { marginBottom: 24 },
+  formGroup: { marginBottom: 20 },
+  label: { fontSize: 16, fontWeight: "600", color: "#374151", marginBottom: 8 },
+  radioGroup: { flexDirection: "row", justifyContent: "center", gap: 24 },
+  radioOption: { flexDirection: "row", alignItems: "center" },
   radioButton: {
     width: 20,
     height: 20,
@@ -224,10 +215,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "#1e40af",
   },
-  radioLabel: {
-    fontSize: 16,
-    color: "#374151",
-  },
+  radioLabel: { fontSize: 16, color: "#374151" },
   input: {
     borderWidth: 1,
     borderColor: "#d1d5db",
@@ -244,25 +232,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  loginButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  loginButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
   loginLinkContainer: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 12,
   },
-  loginText: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  signUpText: {
-    fontSize: 14,
-    color: "#1e40af",
-    fontWeight: "600",
-  },
+  loginText: { fontSize: 14, color: "#374151" },
+  signUpText: { fontSize: 14, color: "#1e40af", fontWeight: "600" },
 });
 
 export default Login;

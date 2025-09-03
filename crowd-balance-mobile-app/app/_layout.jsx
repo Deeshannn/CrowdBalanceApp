@@ -11,6 +11,10 @@ function RootLayout() {
         name="auth" // dynamic route
         options={{ headerShown: false, }}
       />
+      <Stack.Screen
+        name="dashboard/index"
+        options={{ headerShown: false, }}
+      />
     </Stack>
   );
 }

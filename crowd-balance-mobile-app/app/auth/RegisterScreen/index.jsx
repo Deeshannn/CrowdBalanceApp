@@ -26,7 +26,7 @@ const RegisterScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Your backend URL - Update this to your actual backend URL
-  const BACKEND_URL = "http://10.108.4.14:4000"; // Change to your server URL
+  const BACKEND_URL = "http://10.30.14.167:4000"; // Change to your server URL
   // For Android emulator: "http://10.0.2.2:4000"
   // For iOS simulator: "http://localhost:4000"
   // For physical device: "http://YOUR_COMPUTER_IP:4000"
