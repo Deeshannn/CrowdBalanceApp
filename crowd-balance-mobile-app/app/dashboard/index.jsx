@@ -18,18 +18,56 @@ const Dashboard = () => {
     const fetchUser = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
-        if (!userId) {
+        const isLoggedIn = await AsyncStorage.getItem("isLoggedIn");
+        
+        if (!userId || isLoggedIn !== "true") {
+          console.log("No valid session found, redirecting to login");
           router.replace("/auth/login");
           return;
         }
 
-        const res = await axios.get(`http://10.30.14.167:4000/users/${userId}`);
-        setUser(res.data.user);
+        // First try to get user data from AsyncStorage (stored during login)
+        const storedUserData = await AsyncStorage.getItem("userData");
+        if (storedUserData) {
+          console.log("Loading user data from AsyncStorage");
+          const userData = JSON.parse(storedUserData);
+          setUser(userData);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: Fetch from server if not in AsyncStorage
+        console.log("Fetching user data from server");
+        const res = await axios.get(`http://10.108.4.14:4000/users/${userId}`, {
+          timeout: 10000, // 10 second timeout
+        });
+        
+        if (res.data && res.data.user) {
+          setUser(res.data.user);
+          // Store for future use
+          await AsyncStorage.setItem("userData", JSON.stringify(res.data.user));
+        } else {
+          throw new Error("Invalid response from server");
+        }
       } catch (err) {
         console.error("Error fetching user:", err);
-        // Clear invalid session and redirect to login
-        await AsyncStorage.clear();
-        router.replace("/auth/login");
+        
+        // If we have basic user info from AsyncStorage, use that as fallback
+        const userName = await AsyncStorage.getItem("userName");
+        const userType = await AsyncStorage.getItem("userType");
+        
+        if (userName && userType) {
+          console.log("Using fallback user data from AsyncStorage");
+          setUser({
+            name: userName,
+            userType: userType,
+            id: await AsyncStorage.getItem("userId")
+          });
+        } else {
+          // Clear invalid session and redirect to login
+          await AsyncStorage.clear();
+          router.replace("/auth/login");
+        }
       } finally {
         setLoading(false);
       }
@@ -37,6 +75,11 @@ const Dashboard = () => {
 
     fetchUser();
   }, []);
+
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    router.replace("/auth/LoginScreen");
+  };
 
   if (loading) {
     return (
@@ -50,7 +93,10 @@ const Dashboard = () => {
   if (!user) {
     return (
       <View style={styles.container}>
-        <Text>Error loading user data</Text>
+        <Text style={styles.errorText}>Error loading user data</Text>
+        <TouchableOpacity style={styles.button} onPress={handleLogout}>
+          <Text style={styles.buttonText}>Return to Login</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -58,8 +104,6 @@ const Dashboard = () => {
   const handleReportMissing = () => {
     router.push('/GetLostInfo');
   };
-
-
 
   return (
     <View style={styles.container}>
@@ -71,18 +115,7 @@ const Dashboard = () => {
         )}
       </View>
 
-      {/* <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.alertIcon}>🚨</Text>
-          <View>
-            <Text style={styles.title}>New Missing Person</Text>
-            <Text style={styles.subtitle}>
-              Fill in the details below. This will notify all staff immediately.
-            </Text>
-          </View>
-        </View>
-      </View> */}
-      <View style={styles.container}>
+      <View style={styles.actionContainer}>
         <TouchableOpacity
           style={styles.emergencyButton}
           onPress={handleReportMissing}
@@ -99,6 +132,13 @@ const Dashboard = () => {
           onPress={() => router.push("/profile")}
         >
           <Text style={styles.buttonText}>View Profile</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.button, styles.logoutButton]}
+          onPress={handleLogout}
+        >
+          <Text style={styles.buttonText}>Logout</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -121,6 +161,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: "#6b7280",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#ef4444",
+    textAlign: "center",
+    marginBottom: 20,
   },
   header: {
     backgroundColor: "white",
@@ -150,6 +196,9 @@ const styles = StyleSheet.create({
     color: "#1e40af",
     fontWeight: "600",
   },
+  actionContainer: {
+    marginBottom: 20,
+  },
   emergencyButton: {
     backgroundColor: "#1e40af",
     padding: 16,
@@ -169,7 +218,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flex: 1,
-    // justifyContent: "center",
+    gap: 15,
   },
   button: {
     backgroundColor: "#1e40af",
@@ -177,6 +226,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginHorizontal: 20,
+  },
+  logoutButton: {
+    backgroundColor: "#ef4444",
   },
   buttonText: {
     color: "white",

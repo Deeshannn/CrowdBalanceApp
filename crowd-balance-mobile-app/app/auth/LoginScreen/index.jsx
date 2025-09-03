@@ -14,15 +14,13 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
-// You'll need to update this import path based on your asset location
-// import EngExLogo from "../../../assets/images/EngEx-logo.png";
-
 const Login = () => {
   const [role, setRole] = useState("organizer");
   const [user, setUser] = useState({
     gmail: "",
     password: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (name, value) => {
     setUser((prevUser) => ({ ...prevUser, [name]: value }));
@@ -34,8 +32,10 @@ const Login = () => {
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      const response = await axios.post("http://10.30.14.167:4000/users/login", {
+      const response = await axios.post("http://10.108.4.14:4000/users/login", {
         gmail: String(user.gmail),
         password: String(user.password),
       });
@@ -49,17 +49,30 @@ const Login = () => {
         await AsyncStorage.setItem("userName", data.name);
         await AsyncStorage.setItem("userType", data.userType);
         await AsyncStorage.setItem("isLoggedIn", "true");
+        
+        // Store the complete user data to avoid network call in dashboard
+        await AsyncStorage.setItem("userData", JSON.stringify({
+          id: data.userId,
+          name: data.name,
+          userType: data.userType,
+          assignedHall: data.assignedHall || null
+        }));
 
         Alert.alert("Success", "Login Successful");
 
-        // Navigate to dashboard
-        router.replace("/dashboard");
+        // Add a small delay to ensure AsyncStorage operations complete
+        setTimeout(() => {
+          router.replace("/dashboard");
+        }, 100);
+
       } else {
         Alert.alert("Login Failed", data.err || "Invalid credentials");
       }
     } catch (err) {
       console.error("Login error:", err);
       Alert.alert("Login Failed", err.message || "Something went wrong");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,12 +92,6 @@ const Login = () => {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <View style={styles.logoPlaceholder}>
-                {/* Uncomment when you have the logo */}
-                {/* <Image
-                  source={EngExLogo}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                /> */}
                 <Text style={styles.logoText}>ENGEX</Text>
               </View>
             </View>
@@ -92,7 +99,6 @@ const Login = () => {
 
           {/* Form */}
           <View style={styles.form}>
-
             {/* Email Input */}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Email</Text>
@@ -106,6 +112,7 @@ const Login = () => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -120,13 +127,18 @@ const Login = () => {
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
             {/* Login Button */}
-            <TouchableOpacity style={styles.loginButton} onPress={handleSubmit}>
+            <TouchableOpacity 
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
               <Text style={styles.loginButtonText}>
-                Login as {role === "panel" ? "Main Panel" : "Organizer"}
+                {isLoading ? "Logging in..." : `Login as ${role === "panel" ? "Main Panel" : "Organizer"}`}
               </Text>
             </TouchableOpacity>
           </View>
@@ -134,8 +146,8 @@ const Login = () => {
           {/* Navigate to Registration Page */}
           <View style={styles.loginLinkContainer}>
             <Text style={styles.loginText}>Not registered yet? </Text>
-            <TouchableOpacity onPress={navigateToRegister}>
-              <Text style={styles.signUpText}>SignUp</Text>
+            <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+              <Text style={[styles.signUpText, isLoading && styles.disabledText]}>SignUp</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -214,6 +226,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+  loginButtonDisabled: {
+    backgroundColor: "#9ca3af",
+  },
   loginButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
   loginLinkContainer: {
     flexDirection: "row",
@@ -222,6 +237,7 @@ const styles = StyleSheet.create({
   },
   loginText: { fontSize: 14, color: "#374151" },
   signUpText: { fontSize: 14, color: "#1e40af", fontWeight: "600" },
+  disabledText: { color: "#9ca3af" },
 });
 
 export default Login;
