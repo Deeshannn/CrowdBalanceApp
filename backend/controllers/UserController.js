@@ -59,7 +59,7 @@ const addOrganizer = async (req, res, next) => {
   if (!email || !password || !name || !phone) {
     return res
       .status(400)
-      .json({ message: "Email, password, name, and phone are required" });
+      .json({ message: "Email, password, name, and phone are requiredd" });
   }
 
   try {

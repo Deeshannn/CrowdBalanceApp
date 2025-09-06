@@ -15,6 +15,10 @@ function CrowdLayout() {
         name="LocationDetails/index"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="AssignOrganizers/index"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }
