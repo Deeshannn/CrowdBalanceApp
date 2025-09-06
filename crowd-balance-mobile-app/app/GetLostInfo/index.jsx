@@ -136,10 +136,10 @@ const GetLostInfo = () => {
         UserId: userId
       };
 
-      console.log("Sending report data...");
+      console.log("Sending report data..");
 
       // Send to backend
-      const response = await fetch('http://10.108.4.14:4000/missing-reports', {
+      const response = await fetch('http://192.168.1.2:4000/missing-reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

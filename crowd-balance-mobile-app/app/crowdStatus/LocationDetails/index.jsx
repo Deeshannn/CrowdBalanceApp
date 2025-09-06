@@ -67,6 +67,38 @@ const LocationDetail = () => {
     }
   }, [params.locationData, fetchLocationDetails]);
 
+  // Calculate last hour crowd data from activities
+  const getLastHourCrowdData = () => {
+    if (!activities || activities.length === 0) {
+      return {
+        minCrowdScore: 0,
+        moderateCrowdScore: 0,
+        maxCrowdScore: 0,
+        total: 0
+      };
+    }
+
+    const counts = activities.reduce((acc, activity) => {
+      switch (activity.crowdLevel) {
+        case 'min':
+          acc.minCrowdScore += 1;
+          break;
+        case 'moderate':
+          acc.moderateCrowdScore += 1;
+          break;
+        case 'max':
+          acc.maxCrowdScore += 1;
+          break;
+      }
+      return acc;
+    }, { minCrowdScore: 0, moderateCrowdScore: 0, maxCrowdScore: 0 });
+
+    return {
+      ...counts,
+      total: counts.minCrowdScore + counts.moderateCrowdScore + counts.maxCrowdScore
+    };
+  };
+
   const onRefresh = () => {
     if (location?._id) {
       setRefreshing(true);
@@ -88,9 +120,8 @@ const LocationDetail = () => {
     );
   }
 
-  const getCrowdLevel = (location) => {
-    const { minCrowdScore, moderateCrowdScore, maxCrowdScore } = location;
-    const total = minCrowdScore + moderateCrowdScore + maxCrowdScore;
+  const getCrowdLevel = (crowdData) => {
+    const { minCrowdScore, moderateCrowdScore, maxCrowdScore, total } = crowdData;
     
     if (total === 0) return { level: 'No Data', color: '#999', percentage: 0 };
     
@@ -158,24 +189,24 @@ const LocationDetail = () => {
     }
   };
 
-  const renderCrowdChart = (location) => {
-    const total = location.minCrowdScore + location.moderateCrowdScore + location.maxCrowdScore;
+  const renderCrowdChart = (crowdData) => {
+    const { minCrowdScore, moderateCrowdScore, maxCrowdScore, total } = crowdData;
     
     if (total === 0) {
       return (
         <View style={styles.chartContainer}>
-          <Text style={styles.noDataText}>No crowd data available</Text>
+          <Text style={styles.noDataText}>No crowd data available for the last hour</Text>
         </View>
       );
     }
 
-    const minPercentage = (location.minCrowdScore / total) * 100;
-    const moderatePercentage = (location.moderateCrowdScore / total) * 100;
-    const maxPercentage = (location.maxCrowdScore / total) * 100;
+    const minPercentage = (minCrowdScore / total) * 100;
+    const moderatePercentage = (moderateCrowdScore / total) * 100;
+    const maxPercentage = (maxCrowdScore / total) * 100;
 
     return (
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Crowd Level Distribution</Text>
+        <Text style={styles.chartTitle}>Crowd Level Distribution (Last Hour)</Text>
         
         <View style={styles.chartBar}>
           <View style={[styles.chartSegment, { 
@@ -195,22 +226,22 @@ const LocationDetail = () => {
         <View style={styles.chartLegend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
-            <Text style={styles.legendText}>Low Crowd ({location.minCrowdScore})</Text>
+            <Text style={styles.legendText}>Low Crowd ({minCrowdScore})</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
-            <Text style={styles.legendText}>Moderate Crowd ({location.moderateCrowdScore})</Text>
+            <Text style={styles.legendText}>Moderate Crowd ({moderateCrowdScore})</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendColor, { backgroundColor: '#F44336' }]} />
-            <Text style={styles.legendText}>High Crowd ({location.maxCrowdScore})</Text>
+            <Text style={styles.legendText}>High Crowd ({maxCrowdScore})</Text>
           </View>
         </View>
         
         <View style={styles.percentageContainer}>
           <Text style={styles.percentageText}>
-            Current Dominant Level: <Text style={[styles.percentageValue, { color: getCrowdLevel(location).color }]}>
-              {getCrowdLevel(location).level} ({getCrowdLevel(location).percentage}%)
+            Current Dominant Level: <Text style={[styles.percentageValue, { color: getCrowdLevel(crowdData).color }]}>
+              {getCrowdLevel(crowdData).level} ({getCrowdLevel(crowdData).percentage}%)
             </Text>
           </Text>
         </View>
@@ -256,8 +287,9 @@ const LocationDetail = () => {
     );
   };
 
-  const crowdInfo = getCrowdLevel(location);
-  const totalReports = location.minCrowdScore + location.moderateCrowdScore + location.maxCrowdScore;
+  // Get last hour data instead of all-time data
+  const lastHourData = getLastHourCrowdData();
+  const crowdInfo = getCrowdLevel(lastHourData);
 
   if (loading) {
     return (
@@ -315,13 +347,13 @@ const LocationDetail = () => {
           {renderActivityFeed()}
         </View>
 
-        {/* Crowd Statistics Card */}
+        {/* Crowd Statistics Card - Now showing last hour data */}
         <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Crowd Statistics</Text>
+          <Text style={styles.cardTitle}>Crowd Statistics (Last Hour)</Text>
           
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{totalReports}</Text>
+              <Text style={styles.statNumber}>{lastHourData.total}</Text>
               <Text style={styles.statLabel}>Total Reports</Text>
             </View>
             <View style={styles.statItem}>
@@ -337,22 +369,22 @@ const LocationDetail = () => {
           </View>
         </View>
 
-        {/* Chart Card */}
+        {/* Chart Card - Now showing last hour data */}
         <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Crowd Level Analysis</Text>
-          {renderCrowdChart(location)}
+          <Text style={styles.cardTitle}>Crowd Level Analysis (Last Hour)</Text>
+          {renderCrowdChart(lastHourData)}
         </View>
 
-        {/* Individual Score Breakdown */}
+        {/* Individual Score Breakdown - Now showing last hour data */}
         <View style={styles.breakdownCard}>
-          <Text style={styles.cardTitle}>Detailed Breakdown</Text>
+          <Text style={styles.cardTitle}>Detailed Breakdown (Last Hour)</Text>
           
           <View style={styles.scoreItem}>
             <View style={styles.scoreHeader}>
               <View style={[styles.scoreIndicator, { backgroundColor: '#4CAF50' }]} />
               <Text style={styles.scoreTitle}>Low Crowd Reports</Text>
             </View>
-            <Text style={styles.scoreValue}>{location.minCrowdScore}</Text>
+            <Text style={styles.scoreValue}>{lastHourData.minCrowdScore}</Text>
           </View>
 
           <View style={styles.scoreItem}>
@@ -360,7 +392,7 @@ const LocationDetail = () => {
               <View style={[styles.scoreIndicator, { backgroundColor: '#FF9800' }]} />
               <Text style={styles.scoreTitle}>Moderate Crowd Reports</Text>
             </View>
-            <Text style={styles.scoreValue}>{location.moderateCrowdScore}</Text>
+            <Text style={styles.scoreValue}>{lastHourData.moderateCrowdScore}</Text>
           </View>
 
           <View style={styles.scoreItem}>
@@ -368,7 +400,7 @@ const LocationDetail = () => {
               <View style={[styles.scoreIndicator, { backgroundColor: '#F44336' }]} />
               <Text style={styles.scoreTitle}>High Crowd Reports</Text>
             </View>
-            <Text style={styles.scoreValue}>{location.maxCrowdScore}</Text>
+            <Text style={styles.scoreValue}>{lastHourData.maxCrowdScore}</Text>
           </View>
         </View>
       </ScrollView>
