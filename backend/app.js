@@ -6,6 +6,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const userRouter = require("./routes/UserRoutes");
 const missingReportRouter = require("./routes/MissingReportRoutes");
+const locationRoutes = require('./routes/LocationRoutes');
 const cors = require("cors");
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors());
 // Routes
 app.use("/users", userRouter);
 app.use("/missing-reports", missingReportRouter);
+app.use('/locations', locationRoutes);
 
 // Health check endpoint
 app.get("/", (req, res) => {
@@ -26,7 +28,8 @@ app.get("/", (req, res) => {
         message: "Server is running!", 
         endpoints: {
             users: "/users",
-            missingReports: "/missing-reports"
+            missingReports: "/missing-reports",
+            locations: "/locations"
         }
     });
 });

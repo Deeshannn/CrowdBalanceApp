@@ -16,7 +16,7 @@ const Profile = () => {
       }
 
       try {
-        const res = await axios.get(`http://10.108.4.14:4000/users/${userId}`);
+        const res = await axios.get(`http://192.168.1.2:4000/users/${userId}`);
         setUser(res.data.user);
       } catch (err) {
         console.error(err);

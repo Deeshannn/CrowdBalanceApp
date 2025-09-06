@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   RefreshControl,
+  Alert
 } from "react-native";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -46,7 +47,7 @@ const Dashboard = () => {
 
         // Fallback: Fetch from server if not in AsyncStorage
         console.log("Fetching user data from server");
-        const res = await axios.get(`http://10.108.4.14:4000/users/${userId}`, {
+        const res = await axios.get(`http://192.168.1.24:4000/users/${userId}`, {
           timeout: 10000, // 10 second timeout
         });
         
@@ -93,7 +94,7 @@ const Dashboard = () => {
     setReportsLoading(true);
     try {
       // Fetch ALL missing reports (not user-specific)
-      const response = await axios.get(`http://10.108.4.14:4000/missing-reports/`, {
+      const response = await axios.get(`http://192.168.1.2:4000/missing-reports/`, {
         timeout: 10000,
       });
       
@@ -106,6 +107,60 @@ const Dashboard = () => {
       // Don't show alert for network errors, just log them
     } finally {
       setReportsLoading(false);
+    }
+  };
+
+  const handleMarkAsFound = async (reportId, personName) => {
+    Alert.alert(
+      "Mark as Found",
+      `Are you sure you want to mark ${personName} as found? This will permanently delete the report from the database.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete Report", 
+          style: "destructive",
+          onPress: () => deleteReport(reportId, personName)
+        }
+      ]
+    );
+  };
+
+  const deleteReport = async (reportId, personName) => {
+    try {
+      const response = await axios.delete(
+        `http://192.168.1.2:4000/missing-reports/${reportId}`,
+        { timeout: 10000 }
+      );
+
+      if (response.status === 200) {
+        // Remove the report from local state
+        setMissingReports(prev => 
+          prev.filter(report => report._id !== reportId)
+        );
+        
+        Alert.alert(
+          "Success", 
+          `${personName} has been marked as found and the report has been deleted.`,
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      
+      let errorMessage = "Failed to delete the report. Please try again.";
+      if (error.response) {
+        // Server responded with an error status
+        errorMessage = error.response.data?.message || errorMessage;
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = "Network error. Please check your connection.";
+      }
+      
+      Alert.alert(
+        "Error", 
+        errorMessage,
+        [{ text: "OK" }]
+      );
     }
   };
 
@@ -134,8 +189,21 @@ const Dashboard = () => {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.clear();
-    router.replace("/auth/LoginScreen");
+    Alert.alert(
+      "Confirm Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Logout", 
+          style: "destructive",
+          onPress: async () => {
+            await AsyncStorage.clear();
+            router.replace("/auth/LoginScreen");
+          }
+        }
+      ]
+    );
   };
 
   if (loading) {
@@ -160,6 +228,25 @@ const Dashboard = () => {
 
   const handleReportMissing = () => {
     router.push('/GetLostInfo');
+  };
+
+
+
+
+  // Function to handle crowd status navigation based on user type
+  const handleCrowdStatusNavigation = () => {
+    if (user?.userType === "Organizer") {
+      router.push("/crowdStatus/OrganizerCrowdStatus");
+    } else if (user?.userType === "Panel") {
+      router.push("/crowdStatus/MainPanelCrowdStatus");
+    } else {
+      // For other user types, you can either show an alert or navigate to a default screen
+      Alert.alert(
+        "Access Denied",
+        "Your user type does not have access to crowd status features.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   return (
@@ -213,7 +300,11 @@ const Dashboard = () => {
             {missingReports.map((report) => (
               <View key={report._id} style={styles.reportCard}>
                 <View style={styles.reportHeader}>
-                  <Image source={{ uri: report.image }} style={styles.reportImage} />
+                  <Image 
+                    source={{ uri: report.image }} 
+                    style={styles.reportImage} 
+                    onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+                  />
                   <View style={styles.reportInfo}>
                     <Text style={styles.reportName}>{report.name}</Text>
                     <Text style={styles.reportDetails}>Age: {report.age} • {report.gender}</Text>
@@ -222,9 +313,9 @@ const Dashboard = () => {
                       Reported: {formatDate(report.createdAt)}
                     </Text>
                     {/* Show who reported it */}
-                    {report.reportedBy && (
+                    {report.UserId && (
                       <Text style={styles.reportedBy}>
-                        Reported by: {report.reportedBy.name || 'Unknown'}
+                        Reported by: {report.UserId.name || 'Unknown'}
                       </Text>
                     )}
                   </View>
@@ -232,12 +323,25 @@ const Dashboard = () => {
                     <Text style={styles.statusText}>{report.status}</Text>
                   </View>
                 </View>
+                
                 {report.description && report.description.length > 0 && (
                   <View style={styles.reportDescription}>
                     <Text style={styles.descriptionLabel}>Description:</Text>
                     {report.description.map((desc, index) => (
                       <Text key={index} style={styles.descriptionText}>• {desc}</Text>
                     ))}
+                  </View>
+                )}
+
+                {/* FOUND Button - Only show if status is not already 'Found' */}
+                {report.status !== 'Found' && (
+                  <View style={styles.actionButtonContainer}>
+                    <TouchableOpacity
+                      style={styles.foundButton}
+                      onPress={() => handleMarkAsFound(report._id, report.name)}
+                    >
+                      <Text style={styles.foundButtonText}>✓ PERSON FOUND</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -252,6 +356,14 @@ const Dashboard = () => {
           onPress={() => router.push("/profile")}
         >
           <Text style={styles.buttonText}>View Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          // onPress={() => router.push("/crowdStatus/OrganizerCrowdStatus")}
+          onPress = {handleCrowdStatusNavigation}
+        >
+          <Text style={styles.buttonText}>Crowd Status</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -409,6 +521,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
     marginRight: 12,
+    backgroundColor: '#f3f4f6', // Fallback background color
   },
   reportInfo: {
     flex: 1,
@@ -452,6 +565,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     paddingTop: 12,
+    marginBottom: 12,
   },
   descriptionLabel: {
     fontSize: 14,
@@ -463,6 +577,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     lineHeight: 20,
+  },
+  actionButtonContainer: {
+    alignItems: 'flex-end',
+    marginTop: 8,
+  },
+  foundButton: {
+    backgroundColor: '#10b981',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  foundButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   buttonContainer: {
     gap: 15,

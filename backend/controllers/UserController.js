@@ -100,6 +100,8 @@ const addOrganizer = async (req, res, next) => {
 const addMainPanel = async (req, res, next) => {
   const { email, password, name, role } = req.body;
 
+  console.log(req.body);
+
   // Validation
   if (!email || !password || !name || !role) {
     return res

@@ -8,8 +8,9 @@ function RootLayout() {
         headerShown: false, // This removes the "auth" header
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/LoginScreen/index" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/RegisterScreen/index" options={{ headerShown: false }} />
+      {/* <Stack.Screen name="auth/LoginScreen/index" options={{ headerShown: false }} /> */}
+      {/* <Stack.Screen name="auth/RegisterScreen/index" options={{ headerShown: false }} /> */}
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="dashboard/index" options={{ headerShown: false }} />
       <Stack.Screen name="profile/index" options={{ headerShown: false }} />
 
@@ -23,6 +24,12 @@ function RootLayout() {
           headerTitleStyle: { fontWeight: 'bold' }
         }} 
       />
+
+      <Stack.Screen name="crowdStatus" options={{ headerShown: false }} />
+
+
+      
+
     </Stack>
   );
 }

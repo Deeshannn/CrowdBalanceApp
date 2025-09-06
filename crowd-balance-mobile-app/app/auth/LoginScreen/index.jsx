@@ -38,7 +38,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://10.108.4.14:4000/users/login", {
+      const response = await axios.post("http://192.168.1.2:4000/users/login", {
         gmail: String(user.gmail),
         password: String(user.password),
       });
