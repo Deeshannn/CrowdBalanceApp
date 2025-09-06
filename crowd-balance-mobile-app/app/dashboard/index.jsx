@@ -13,6 +13,7 @@ import {
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { API_BASE_URL } from "../../config";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -47,7 +48,7 @@ const Dashboard = () => {
 
         // Fallback: Fetch from server if not in AsyncStorage
         console.log("Fetching user data from server");
-        const res = await axios.get(`http://192.168.1.24:4000/users/${userId}`, {
+        const res = await axios.get(`${API_BASE_URL}/users/${userId}`, {
           timeout: 10000, // 10 second timeout
         });
         

@@ -1,0 +1,2 @@
+export const API_BASE_URL = "http://192.168.1.2:4000"; // Home wifi IP Address
+// export const API_BASE_URL = "http://192.168.1.2:4000"; // My phone hotspot IP Address

@@ -31,7 +31,7 @@ const missingReportSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
-    status: {
+    status: { // May be remove this
         type: String,
         enum: ['Active', 'Found', 'Closed'],
         default: 'Active'

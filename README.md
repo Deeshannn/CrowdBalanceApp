@@ -10,3 +10,10 @@ feature/login branch work done
 successfully added registration and login features
 dev, main branches merged
 
+
+
+
+SMS services
+npm install react-native-sms // not work for Expo
+
+npx expo install expo-sms

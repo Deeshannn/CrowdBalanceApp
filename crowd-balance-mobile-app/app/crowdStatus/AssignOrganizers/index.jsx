@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
+import * as SMS from "expo-sms";
 
 const AssignOrganizers = () => {
   const params = useLocalSearchParams();
@@ -334,6 +335,8 @@ const AssignOrganizers = () => {
     setAssignModalVisible(true);
   };
 
+  {
+    /*
   const confirmAssignment = async () => {
     if (!selectedOrganizer || !locationId) return;
 
@@ -410,8 +413,104 @@ const AssignOrganizers = () => {
       setAssignLoading(false);
     }
   };
+  */
+  }
 
-  
+  const confirmAssignment = async () => {
+    if (!selectedOrganizer || !locationId) return;
+
+    setAssignLoading(true);
+    try {
+      console.log("Assigning organizer:", {
+        organizerId: selectedOrganizer._id,
+        locationName: locationName,
+      });
+
+      // Update the organizer's assignedHall field with the location name
+      const response = await fetch(
+        `${API_BASE_URL}/users/organizers/${selectedOrganizer._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assignedHall: locationName,
+            // status: "Busy", // Also update status to Busy
+          }),
+        }
+      );
+
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await response.text();
+        console.error("Non-JSON response:", textResponse);
+        throw new Error(
+          "Server returned non-JSON response. Please check server status."
+        );
+      }
+
+      const result = await response.json();
+      console.log("Assignment result:", result);
+
+
+      
+      if (result.organizer) {
+        // Send SMS notification to the organizer
+        {/* try {
+          const { result } = await SMS.sendSMSAsync(
+            [selectedOrganizer.phone],
+            `You have been assigned to ${locationName}. Current crowd level: ${crowdLevel}. Please proceed immediately.`
+          );
+
+          if (result === "sent") {
+            console.log("SMS sent successfully");
+          } else {
+            console.log("SMS could not be sent:", result);
+          }
+        } catch (smsError) {
+          console.warn("SMS sending failed:", smsError);
+        }
+    */}
+        Alert.alert(
+          "Success",
+          `${selectedOrganizer.name} has been assigned to ${locationName} and notified via SMS.`,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setAssignModalVisible(false);
+                setSelectedOrganizer(null);
+                fetchData(false);
+              },
+            },
+          ]
+        );
+      } else {
+        throw new Error(result.message || "Assignment failed");
+      }
+    } catch (error) {
+      console.error("Error assigning organizer:", error);
+
+      let errorMessage = "Failed to assign organizer. Please try again.";
+
+      if (error.name === "SyntaxError" && error.message.includes("JSON")) {
+        errorMessage =
+          "Server error: Unable to process the request. Please check if the server is running properly.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert("Assignment Error", errorMessage);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
   const handleUnassignOrganizer = async (organizer) => {
     Alert.alert(
       "Confirm Unassignment",

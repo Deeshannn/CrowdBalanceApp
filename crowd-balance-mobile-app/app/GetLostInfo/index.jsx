@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
+import { API_BASE_URL } from "../../config";
 
 const GetLostInfo = () => {
   const router = useRouter();
@@ -139,7 +140,7 @@ const GetLostInfo = () => {
       console.log("Sending report data..");
 
       // Send to backend
-      const response = await fetch('http://192.168.1.2:4000/missing-reports', {
+      const response = await fetch('${API_BASE_URL}/missing-reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
