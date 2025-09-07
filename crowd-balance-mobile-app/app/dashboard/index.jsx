@@ -95,7 +95,7 @@ const Dashboard = () => {
     setReportsLoading(true);
     try {
       // Fetch ALL missing reports (not user-specific)
-      const response = await axios.get(`http://192.168.1.2:4000/missing-reports/`, {
+      const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
         timeout: 10000,
       });
       
@@ -129,7 +129,7 @@ const Dashboard = () => {
   const deleteReport = async (reportId, personName) => {
     try {
       const response = await axios.delete(
-        `http://192.168.1.2:4000/missing-reports/${reportId}`,
+        `${API_BASE_URL}/missing-reports/${reportId}`,
         { timeout: 10000 }
       );
 

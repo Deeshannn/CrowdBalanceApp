@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
+import { API_BASE_URL } from "../../../config";
 
 const LocationDetail = () => {
   const params = useLocalSearchParams();
@@ -19,14 +20,14 @@ const LocationDetail = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   // API Base URL
-  const API_BASE_URL = "http://192.168.1.2:4000/locations";
+  // const API_BASE_URL = "http://192.168.1.2:4000/locations";
 
   const fetchLocationDetails = useCallback(async (locationId) => {
     if (!locationId) return;
 
     try {
       // Fetch updated location data
-      const locationResponse = await fetch(`${API_BASE_URL}`);
+      const locationResponse = await fetch(`${API_BASE_URL}/locations`);
       const locationResult = await locationResponse.json();
 
       if (locationResult.success) {
@@ -47,7 +48,7 @@ const LocationDetail = () => {
 
       // Fetch recent activities
       const activitiesResponse = await fetch(
-        `${API_BASE_URL}/${locationId}/activities`
+        `${API_BASE_URL}/locations/${locationId}/activities`
       );
       const activitiesResult = await activitiesResponse.json();
 
@@ -789,6 +790,7 @@ const styles = StyleSheet.create({
     color: "#007AFF",
   },
   buttonContainer: {
+    marginBottom: 35,
     gap: 15,
     paddingHorizontal: 20,
     paddingBottom: 15,
@@ -813,7 +815,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
-  },
+  }
 });
 
 export default LocationDetail;

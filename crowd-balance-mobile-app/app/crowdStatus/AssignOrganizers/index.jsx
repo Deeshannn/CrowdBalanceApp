@@ -14,6 +14,7 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SMS from "expo-sms";
+import { API_BASE_URL } from "../../../config";
 
 const AssignOrganizers = () => {
   const params = useLocalSearchParams();
@@ -31,7 +32,6 @@ const AssignOrganizers = () => {
   const intervalRef = useRef(null);
 
   // API Base URLs - Consider moving to config/constants
-  const API_BASE_URL = "http://192.168.1.2:4000";
   const ORGANIZERS_API = `${API_BASE_URL}/users/organizers`;
   const LOCATIONS_API = `${API_BASE_URL}/locations`;
 
@@ -457,11 +457,10 @@ const AssignOrganizers = () => {
       const result = await response.json();
       console.log("Assignment result:", result);
 
-
-      
       if (result.organizer) {
         // Send SMS notification to the organizer
-        {/* try {
+        {
+          /* try {
           const { result } = await SMS.sendSMSAsync(
             [selectedOrganizer.phone],
             `You have been assigned to ${locationName}. Current crowd level: ${crowdLevel}. Please proceed immediately.`
@@ -475,7 +474,8 @@ const AssignOrganizers = () => {
         } catch (smsError) {
           console.warn("SMS sending failed:", smsError);
         }
-    */}
+    */
+        }
         Alert.alert(
           "Success",
           `${selectedOrganizer.name} has been assigned to ${locationName} and notified via SMS.`,
@@ -603,6 +603,10 @@ const AssignOrganizers = () => {
       "high crowd": "#F44336",
     };
     return crowdColors[level?.toLowerCase()] || "#999";
+  };
+
+  const handleHome = () => {
+    router.push("../../dashboard");
   };
 
   const renderAvailableOrganizer = (organizer, index) => (
@@ -847,6 +851,20 @@ const AssignOrganizers = () => {
               renderAssignedOrganizer(organizer, index)
             )
           )}
+        </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.homeButton]}
+            onPress={handleHome}
+          >
+            <Icon
+              name="home"
+              size={20}
+              color="white"
+              style={styles.buttonIcon}
+            />
+            <Text style={styles.buttonText}>Home</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -1273,6 +1291,30 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
+  buttonContainer: {
+    marginBottom: 35,
+    gap: 15,
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+  },
+  button: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  homeButton: {
+    backgroundColor: "#059669",
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  }
 });
 
 export default AssignOrganizers;

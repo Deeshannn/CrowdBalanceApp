@@ -140,7 +140,7 @@ const GetLostInfo = () => {
       console.log("Sending report data..");
 
       // Send to backend
-      const response = await fetch('${API_BASE_URL}/missing-reports', {
+      const response = await fetch(`${API_BASE_URL}/missing-reports`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

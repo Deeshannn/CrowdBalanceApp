@@ -10,14 +10,13 @@ import {
   ActivityIndicator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { API_BASE_URL } from "../../../config";
 
 const OrganizerScreen = () => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // API Base URL - Replace with your actual API URL
-  const API_BASE_URL = 'http://192.168.1.2:4000/locations';
 
   useEffect(() => {
     fetchLocations();
@@ -27,7 +26,7 @@ const OrganizerScreen = () => {
 
     console.log("Fetching locations...");
     try {
-      const response = await fetch(API_BASE_URL);
+      const response = await fetch(`${API_BASE_URL}/locations`);
       const result = await response.json();
       
       if (result.success) {
@@ -48,7 +47,7 @@ const OrganizerScreen = () => {
     console.log("Location id: " + locationId, "Crowd level: " + crowdLevel);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${locationId}/crowd`, {
+      const response = await fetch(`${API_BASE_URL}/locations/${locationId}/crowd`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { router } from "expo-router";
+import { API_BASE_URL } from "../../../config";
 
 const MainPanelScreen = () => {
   const [locations, setLocations] = useState([]);
@@ -23,7 +24,7 @@ const MainPanelScreen = () => {
   const [newLocationCapacity, setNewLocationCapacity] = useState("");
 
   // API Base URL - Replace with your actual API URL
-  const API_BASE_URL = "http://192.168.1.2:4000/locations";
+  // const API_BASE_URL = "http://192.168.1.2:4000/locations";
 
   useEffect(() => {
     fetchLocations();
@@ -31,7 +32,7 @@ const MainPanelScreen = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const response = await fetch(`${API_BASE_URL}/locations`);
       const result = await response.json();
 
       if (result.success) {
@@ -40,7 +41,7 @@ const MainPanelScreen = () => {
           result.data.map(async (location) => {
             try {
               const activitiesResponse = await fetch(
-                `${API_BASE_URL}/${location._id}/activities`
+                `${API_BASE_URL}/locations/${location._id}/activities`
               );
               const activitiesResult = await activitiesResponse.json();
 
@@ -125,7 +126,7 @@ const MainPanelScreen = () => {
     }
 
     try {
-      const response = await fetch(API_BASE_URL, {
+      const response = await fetch(`${API_BASE_URL}/locations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
