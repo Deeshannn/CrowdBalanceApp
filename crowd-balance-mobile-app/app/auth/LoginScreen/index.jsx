@@ -11,7 +11,7 @@ import {
   Image,
 } from "react-native";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // store login user detais during the login period
 import { router } from "expo-router";
 import { Stack } from "expo-router";
 import { API_BASE_URL } from "../../../config";
