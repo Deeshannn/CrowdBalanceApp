@@ -8,12 +8,17 @@ import {
   ScrollView,
   Image,
   RefreshControl,
-  Alert
+  Alert,
+  Modal,
+  Dimensions,
+  StatusBar
 } from "react-native";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { API_BASE_URL } from "../../config";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -21,6 +26,11 @@ const Dashboard = () => {
   const [missingReports, setMissingReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Image zoom modal states
+  const [selectedImageUri, setSelectedImageUri] = useState(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -165,6 +175,19 @@ const Dashboard = () => {
     }
   };
 
+  // Image zoom functions
+  const openImageModal = (imageUri) => {
+    setSelectedImageUri(imageUri);
+    setImageModalVisible(true);
+    setImageLoading(true);
+  };
+
+  const closeImageModal = () => {
+    setImageModalVisible(false);
+    setSelectedImageUri(null);
+    setImageLoading(false);
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchMissingReports();
@@ -231,9 +254,6 @@ const Dashboard = () => {
     router.push('/GetLostInfo');
   };
 
-
-
-
   // Function to handle crowd status navigation based on user type
   const handleCrowdStatusNavigation = () => {
     if (user?.userType === "Organizer") {
@@ -251,130 +271,189 @@ const Dashboard = () => {
   };
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome, {user.name} 👋</Text>
-        <Text style={styles.subtitle}>Role: {user.userType}</Text>
-        {user.userType === "Organizer" && user.assignedHall && (
-          <Text style={styles.hallInfo}>Hall: {user.assignedHall}</Text>
-        )}
-      </View>
-
-      <View style={styles.actionContainer}>
-        <TouchableOpacity
-          style={styles.emergencyButton}
-          onPress={handleReportMissing}
-        >
-          <Text style={styles.emergencyButtonText}>
-            🚨 Report Missing Person
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Missing Reports Section - Now shows ALL reports */}
-      <View style={styles.reportsSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>All Missing Person Reports</Text>
-          <Text style={styles.reportCount}>({missingReports.length})</Text>
+    <>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome, {user.name} 👋</Text>
+          <Text style={styles.subtitle}>Role: {user.userType}</Text>
+          {user.userType === "Organizer" && user.assignedHall && (
+            <Text style={styles.hallInfo}>Hall: {user.assignedHall}</Text>
+          )}
         </View>
 
-        {reportsLoading ? (
-          <View style={styles.reportsLoading}>
-            <ActivityIndicator size="small" color="#1e40af" />
-            <Text style={styles.loadingText}>Loading reports...</Text>
-          </View>
-        ) : missingReports.length === 0 ? (
-          <View style={styles.noReports}>
-            <Text style={styles.noReportsIcon}>📄</Text>
-            <Text style={styles.noReportsText}>No missing persons</Text>
-            <Text style={styles.noReportsSubtext}>
-              No missing person reports have been filed yet
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={styles.emergencyButton}
+            onPress={handleReportMissing}
+          >
+            <Text style={styles.emergencyButtonText}>
+              🚨 Report Missing Person
             </Text>
-          </View>
-        ) : (
-          <View style={styles.reportsList}>
-            {missingReports.map((report) => (
-              <View key={report._id} style={styles.reportCard}>
-                <View style={styles.reportHeader}>
-                  <Image 
-                    source={{ uri: report.image }} 
-                    style={styles.reportImage} 
-                    onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
-                  />
-                  <View style={styles.reportInfo}>
-                    <Text style={styles.reportName}>{report.name}</Text>
-                    <Text style={styles.reportDetails}>Age: {report.age} • {report.gender}</Text>
-                    <Text style={styles.reportLocation}>📍 {report.lastseenlocation}</Text>
-                    <Text style={styles.reportDate}>
-                      Reported: {formatDate(report.createdAt)}
-                    </Text>
-                    {/* Show who reported it */}
-                    {report.UserId && (
-                      <Text style={styles.reportedBy}>
-                        Reported by: {report.UserId.name || 'Unknown'}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={[styles.statusBadge, getStatusStyle(report.status)]}>
-                    <Text style={styles.statusText}>{report.status}</Text>
-                  </View>
-                </View>
-                
-                {report.description && report.description.length > 0 && (
-                  <View style={styles.reportDescription}>
-                    <Text style={styles.descriptionLabel}>Description:</Text>
-                    {report.description.map((desc, index) => (
-                      <Text key={index} style={styles.descriptionText}>• {desc}</Text>
-                    ))}
-                  </View>
-                )}
+          </TouchableOpacity>
+        </View>
 
-                {/* FOUND Button - Only show if status is not already 'Found' */}
-                {report.status !== 'Found' && (
-                  <View style={styles.actionButtonContainer}>
+        {/* Missing Reports Section - Now shows ALL reports */}
+        <View style={styles.reportsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>All Missing Person Reports</Text>
+            <Text style={styles.reportCount}>({missingReports.length})</Text>
+          </View>
+
+          {reportsLoading ? (
+            <View style={styles.reportsLoading}>
+              <ActivityIndicator size="small" color="#1e40af" />
+              <Text style={styles.loadingText}>Loading reports...</Text>
+            </View>
+          ) : missingReports.length === 0 ? (
+            <View style={styles.noReports}>
+              <Text style={styles.noReportsIcon}>📄</Text>
+              <Text style={styles.noReportsText}>No missing persons</Text>
+              <Text style={styles.noReportsSubtext}>
+                No missing person reports have been filed yet
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.reportsList}>
+              {missingReports.map((report) => (
+                <View key={report._id} style={styles.reportCard}>
+                  <View style={styles.reportHeader}>
                     <TouchableOpacity
-                      style={styles.foundButton}
-                      onPress={() => handleMarkAsFound(report._id, report.name)}
+                      onPress={() => openImageModal(report.image)}
+                      style={styles.imageContainer}
                     >
-                      <Text style={styles.foundButtonText}>✓ PERSON FOUND</Text>
+                      <Image 
+                        source={{ uri: report.image }} 
+                        style={styles.reportImage} 
+                        onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+                      />
+                      <View style={styles.zoomIndicator}>
+                        <Text style={styles.zoomIcon}>🔍</Text>
+                      </View>
                     </TouchableOpacity>
+                    <View style={styles.reportInfo}>
+                      <Text style={styles.reportName}>{report.name}</Text>
+                      <Text style={styles.reportDetails}>Age: {report.age} • {report.gender}</Text>
+                      <Text style={styles.reportLocation}>📍 {report.lastseenlocation}</Text>
+                      <Text style={styles.reportDate}>
+                        Reported: {formatDate(report.createdAt)}
+                      </Text>
+                      {/* Show who reported it */}
+                      {report.UserId && (
+                        <Text style={styles.reportedBy}>
+                          Reported by: {report.UserId.name || 'Unknown'}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={[styles.statusBadge, getStatusStyle(report.status)]}>
+                      <Text style={styles.statusText}>{report.status}</Text>
+                    </View>
                   </View>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+                  
+                  {report.description && report.description.length > 0 && (
+                    <View style={styles.reportDescription}>
+                      <Text style={styles.descriptionLabel}>Description:</Text>
+                      {report.description.map((desc, index) => (
+                        <Text key={index} style={styles.descriptionText}>• {desc}</Text>
+                      ))}
+                    </View>
+                  )}
 
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push("/profile")}
-        >
-          <Text style={styles.buttonText}>View Profile</Text>
-        </TouchableOpacity>
+                  {/* FOUND Button - Only show if status is not already 'Found' */}
+                  {report.status !== 'Found' && (
+                    <View style={styles.actionButtonContainer}>
+                      <TouchableOpacity
+                        style={styles.foundButton}
+                        onPress={() => handleMarkAsFound(report._id, report.name)}
+                      >
+                        <Text style={styles.foundButtonText}>✓ PERSON FOUND</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
 
-        <TouchableOpacity
-          style={styles.button}
-          // onPress={() => router.push("/crowdStatus/OrganizerCrowdStatus")}
-          onPress = {handleCrowdStatusNavigation}
-        >
-          <Text style={styles.buttonText}>Crowd Status</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.buttonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push("/profile")}
+          >
+            <Text style={styles.buttonText}>View Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleCrowdStatusNavigation}
+          >
+            <Text style={styles.buttonText}>Crowd Status</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.button, styles.logoutButton]}
+            onPress={handleLogout}
+          >
+            <Text style={styles.buttonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Fullscreen Image Modal */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeImageModal}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <StatusBar hidden={true} />
+          
+          {/* Close Button */}
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={closeImageModal}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+
+          {/* Loading indicator */}
+          {imageLoading && (
+            <View style={styles.imageLoadingContainer}>
+              <ActivityIndicator size="large" color="#ffffff" />
+              <Text style={styles.imageLoadingText}>Loading image...</Text>
+            </View>
+          )}
+
+          {/* Fullscreen Image */}
+          {selectedImageUri && (
+            <TouchableOpacity
+              style={styles.imageModalContainer}
+              activeOpacity={1}
+              onPress={closeImageModal}
+            >
+              <Image
+                source={{ uri: selectedImageUri }}
+                style={styles.fullscreenImage}
+                resizeMode="contain"
+                onLoad={() => setImageLoading(false)}
+                onError={() => {
+                  setImageLoading(false);
+                  Alert.alert("Error", "Failed to load image");
+                }}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -517,12 +596,30 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  imageContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
   reportImage: {
     width: 60,
     height: 60,
     borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: '#f3f4f6', // Fallback background color
+    backgroundColor: '#f3f4f6',
+  },
+  zoomIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomIcon: {
+    fontSize: 10,
+    color: 'white',
   },
   reportInfo: {
     flex: 1,
@@ -617,6 +714,56 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  imageLoadingContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  imageLoadingText: {
+    color: 'white',
+    marginTop: 10,
+    fontSize: 16,
+  },
+  imageModalContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: screenWidth,
+    height: screenHeight,
+    maxWidth: screenWidth,
+    maxHeight: screenHeight,
   },
 });
 
