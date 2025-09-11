@@ -303,6 +303,8 @@ const OrganizerScreen = () => {
   };
 
   const renderLocationItem = ({ item }) => {
+    // console.log("item: " + item);
+
     const lastHourData = getLastHourCrowdData(item.activities || []);
     const currentLevel = getCurrentCrowdLevel(item); // Based on actual database scores
 
@@ -495,17 +497,7 @@ const OrganizerScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
       />
-
-      {/* Debug/Admin Controls */}
-      <View style={styles.adminControls}>
-        <TouchableOpacity
-          style={styles.adminButton}
-          onPress={triggerScoreReduction}
-        >
-          <Icon name="remove-circle" size={16} color="white" />
-          <Text style={styles.adminButtonText}>Manual Reduce (Test)</Text>
-        </TouchableOpacity>
-      </View>
+      
     </View>
   );
 };
