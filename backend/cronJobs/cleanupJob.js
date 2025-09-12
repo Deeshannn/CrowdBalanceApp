@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const Location = require("../model/LocationModel");
 
 // Run every 2 minutes
-cron.schedule("*/2 * * * *", async () => {
+cron.schedule("0 * * * *", async () => {
   console.log("Running activity log cleanup...");
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
