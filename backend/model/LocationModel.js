@@ -9,7 +9,8 @@ const activityLogSchema = new mongoose.Schema({
   },
   timestamp: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    expires: 60 * 3 // ⏳ 1 hour (in seconds)
   },
   organizerId: {
     type: String,
