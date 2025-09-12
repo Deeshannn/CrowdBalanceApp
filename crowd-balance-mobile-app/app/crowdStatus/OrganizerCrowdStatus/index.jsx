@@ -28,7 +28,9 @@ const OrganizerScreen = () => {
       if (!refreshing && !loading) {
         fetchLocations();
       }
-    }, 30000);
+  });
+
+// export default OrganizerScreen; 30000);
 
     return () => {
       if (refreshInterval.current) {
@@ -38,26 +40,6 @@ const OrganizerScreen = () => {
   }, []);
 
   // Fetch score reduction status from backend
-  // const fetchScoreReductionStatus = async () => {
-
-  //   console.log("Trying to fetch the score reduction data...");
-
-  //   try {
-  //     console.log("Tryinf step 1");
-  //     const response = await fetch(`${API_BASE_URL}/score-reduction/status`);
-  //     console.log("Tryinf step 2");
-  //     console.log("response " + response.data);
-
-  //     const result = await response.json();
-  //     console.log("Tryinf step 3");
-
-  //     if (result.success) {
-  //       setScoreReductionStatus(result.data);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching score reduction status:', error);
-  //   }
-  // };
   const fetchScoreReductionStatus = async () => {
     console.log("Trying to fetch the score reduction data...");
 
@@ -90,9 +72,9 @@ const OrganizerScreen = () => {
     }
   };
 
-  // Calculate crowd data for the last hour only (for display purposes)
-  const getLastHourCrowdData = (activities) => {
-    if (!activities || activities.length === 0) {
+  // Calculate crowd data for the last hour from activityLog
+  const getLastHourCrowdDataFromActivityLog = (activityLog) => {
+    if (!activityLog || activityLog.length === 0) {
       return {
         minCrowdScore: 0,
         moderateCrowdScore: 0,
@@ -103,7 +85,7 @@ const OrganizerScreen = () => {
 
     // Filter activities from the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const lastHourActivities = activities.filter(
+    const lastHourActivities = activityLog.filter(
       (activity) => new Date(activity.timestamp) >= oneHourAgo
     );
 
@@ -132,9 +114,47 @@ const OrganizerScreen = () => {
     };
   };
 
-  // Get the current dominant crowd level based on database scores (not filtered)
+  // Calculate total scores from entire activityLog
+  const getTotalCrowdDataFromActivityLog = (activityLog) => {
+    if (!activityLog || activityLog.length === 0) {
+      return {
+        minCrowdScore: 0,
+        moderateCrowdScore: 0,
+        maxCrowdScore: 0,
+        total: 0,
+      };
+    }
+
+    const counts = activityLog.reduce(
+      (acc, activity) => {
+        switch (activity.crowdLevel) {
+          case "min":
+            acc.minCrowdScore += 1;
+            break;
+          case "moderate":
+            acc.moderateCrowdScore += 1;
+            break;
+          case "max":
+            acc.maxCrowdScore += 1;
+            break;
+        }
+        return acc;
+      },
+      { minCrowdScore: 0, moderateCrowdScore: 0, maxCrowdScore: 0 }
+    );
+
+    return {
+      ...counts,
+      total:
+        counts.minCrowdScore + counts.moderateCrowdScore + counts.maxCrowdScore,
+    };
+  };
+
+  // Get the current dominant crowd level based on calculated scores
   const getCurrentCrowdLevel = (location) => {
-    const { minCrowdScore, moderateCrowdScore, maxCrowdScore } = location;
+    // Use calculated scores from activityLog instead of database scores
+    const calculatedScores = getTotalCrowdDataFromActivityLog(location.activityLog || []);
+    const { minCrowdScore, moderateCrowdScore, maxCrowdScore } = calculatedScores;
     const total = minCrowdScore + moderateCrowdScore + maxCrowdScore;
 
     if (total === 0) return { level: "No Data", color: "#999", icon: "help" };
@@ -159,35 +179,8 @@ const OrganizerScreen = () => {
       const result = await response.json();
 
       if (result.success) {
-        // Fetch activities for each location to show recent activity
-        const locationsWithActivities = await Promise.all(
-          result.data.map(async (location) => {
-            try {
-              const activitiesResponse = await fetch(
-                `${API_BASE_URL}/locations/${location._id}/activities`
-              );
-              const activitiesResult = await activitiesResponse.json();
-
-              return {
-                ...location,
-                activities: activitiesResult.success
-                  ? activitiesResult.data.activities || []
-                  : [],
-              };
-            } catch (error) {
-              console.error(
-                `Error fetching activities for location ${location._id}:`,
-                error
-              );
-              return {
-                ...location,
-                activities: [],
-              };
-            }
-          })
-        );
-
-        setLocations(locationsWithActivities);
+        // The backend now returns calculated scores, but we'll also calculate from activityLog for consistency
+        setLocations(result.data);
       } else {
         Alert.alert("Error", "Failed to fetch locations");
       }
@@ -303,13 +296,13 @@ const OrganizerScreen = () => {
   };
 
   const renderLocationItem = ({ item }) => {
-    // console.log("item: " + item);
-
-    const lastHourData = getLastHourCrowdData(item.activities || []);
-    const currentLevel = getCurrentCrowdLevel(item); // Based on actual database scores
+    // Calculate scores from activityLog instead of using database scores
+    const totalScores = getTotalCrowdDataFromActivityLog(item.activityLog || []);
+    const lastHourData = getLastHourCrowdDataFromActivityLog(item.activityLog || []);
+    const currentLevel = getCurrentCrowdLevel(item);
 
     // Get the most recent activity for display
-    const sortedActivities = (item.activities || []).sort(
+    const sortedActivities = (item.activityLog || []).sort(
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
     const mostRecentActivity = sortedActivities[0];
@@ -336,30 +329,35 @@ const OrganizerScreen = () => {
 
         <Text style={styles.locationCapacity}>Capacity: {item.capacity}</Text>
 
-        {/* Current Database Scores (Auto-reducing) */}
+        {/* Current Calculated Scores from Activity Log */}
         <View style={styles.scoresContainer}>
           <Text style={styles.scoresTitle}>
-            Current Scores (Auto-reducing):
+            Current Scores (From Activity Log):
           </Text>
           <View style={styles.scoreRow}>
             <View style={styles.scoreItem}>
               <Text style={[styles.scoreNumber, { color: "#4CAF50" }]}>
-                {item.minCrowdScore}
+                {totalScores.minCrowdScore}
               </Text>
               <Text style={styles.scoreLabel}>Low</Text>
             </View>
             <View style={styles.scoreItem}>
               <Text style={[styles.scoreNumber, { color: "#FF9800" }]}>
-                {item.moderateCrowdScore}
+                {totalScores.moderateCrowdScore}
               </Text>
               <Text style={styles.scoreLabel}>Moderate</Text>
             </View>
             <View style={styles.scoreItem}>
               <Text style={[styles.scoreNumber, { color: "#F44336" }]}>
-                {item.maxCrowdScore}
+                {totalScores.maxCrowdScore}
               </Text>
               <Text style={styles.scoreLabel}>High</Text>
             </View>
+          </View>
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>
+              Total Reports: {totalScores.total}
+            </Text>
           </View>
 
           {/* Recent Activity Info */}
@@ -418,6 +416,18 @@ const OrganizerScreen = () => {
           )}
         </View>
 
+        {/* Activity Log Summary */}
+        <View style={styles.activitySummaryContainer}>
+          <Text style={styles.activitySummaryTitle}>
+            Activity Log: {(item.activityLog || []).length} total entries
+          </Text>
+          {mostRecentActivity && (
+            <Text style={styles.activitySummaryText}>
+              Last: {mostRecentActivity.crowdLevel} crowd ({formatTimeAgo(mostRecentActivity.timestamp)})
+            </Text>
+          )}
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[styles.crowdButton, styles.minButton]}
@@ -460,7 +470,7 @@ const OrganizerScreen = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Organizer Panel</Text>
-        <Text style={styles.subtitle}>Scores Auto-Reduce Every Hour</Text>
+        <Text style={styles.subtitle}>Scores Calculated from Activity Log</Text>
 
         {/* Score Reduction Status */}
         {scoreReductionStatus && (
@@ -497,7 +507,6 @@ const OrganizerScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
       />
-      
     </View>
   );
 };
