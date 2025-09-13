@@ -23,9 +23,6 @@ const MainPanelScreen = () => {
   const [newLocationName, setNewLocationName] = useState("");
   const [newLocationCapacity, setNewLocationCapacity] = useState("");
 
-  // API Base URL - Replace with your actual API URL
-  // const API_BASE_URL = "http://192.168.1.2:4000/locations";
-
   useEffect(() => {
     fetchLocations();
   }, []);
@@ -36,7 +33,7 @@ const MainPanelScreen = () => {
       const result = await response.json();
 
       if (result.success) {
-        // Process each location to get last hour activities
+        // Process each location to get activities
         const locationsWithActivities = await Promise.all(
           result.data.map(async (location) => {
             try {
@@ -47,28 +44,30 @@ const MainPanelScreen = () => {
 
               if (activitiesResult.success) {
                 const activities = activitiesResult.data.activities || [];
-                
-                // Calculate crowd scores based on last hour activities
-                const crowdScores = calculateLastHourCrowdScores(activities);
-                
+
+                // Sort activities by timestamp (newest first)
+                const sortedActivities = activities.sort(
+                  (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
                 return {
                   ...location,
-                  lastHourActivities: activities,
-                  lastHourCrowdScores: crowdScores,
+                  activities: sortedActivities,
                 };
               }
-              
+
               return {
                 ...location,
-                lastHourActivities: [],
-                lastHourCrowdScores: { min: 0, moderate: 0, max: 0 },
+                activities: [],
               };
             } catch (error) {
-              console.error(`Error fetching activities for ${location.name}:`, error);
+              console.error(
+                `Error fetching activities for ${location.name}:`,
+                error
+              );
               return {
                 ...location,
-                lastHourActivities: [],
-                lastHourCrowdScores: { min: 0, moderate: 0, max: 0 },
+                activities: [],
               };
             }
           })
@@ -84,31 +83,6 @@ const MainPanelScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  const calculateLastHourCrowdScores = (activities) => {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
-    // Filter activities from the last hour
-    const recentActivities = activities.filter(activity => {
-      const activityTime = new Date(activity.timestamp);
-      return activityTime >= oneHourAgo;
-    });
-
-    // Count occurrences of each crowd level
-    const scores = { min: 0, moderate: 0, max: 0 };
-    
-    recentActivities.forEach(activity => {
-      if (activity.crowdLevel === 'min') {
-        scores.min += 1;
-      } else if (activity.crowdLevel === 'moderate') {
-        scores.moderate += 1;
-      } else if (activity.crowdLevel === 'max') {
-        scores.max += 1;
-      }
-    });
-
-    return scores;
   };
 
   const addNewLocation = async () => {
@@ -184,28 +158,40 @@ const MainPanelScreen = () => {
   };
 
   const getCrowdLevel = (location) => {
-    const { lastHourCrowdScores } = location;
-    const total = lastHourCrowdScores.min + lastHourCrowdScores.moderate + lastHourCrowdScores.max;
+    const totalActivities = location.activities.length;
+    
+    if (totalActivities === 0) {
+      return { level: "No Data", color: "#999", percentage: 0 };
+    }
 
-    if (total === 0) return { level: "No Recent Data", color: "#999", percentage: 0 };
+    // Count crowd levels from all activities
+    const crowdCounts = location.activities.reduce(
+      (acc, activity) => {
+        if (activity.crowdLevel === "min") acc.min++;
+        else if (activity.crowdLevel === "moderate") acc.moderate++;
+        else if (activity.crowdLevel === "max") acc.max++;
+        return acc;
+      },
+      { min: 0, moderate: 0, max: 0 }
+    );
 
-    if (lastHourCrowdScores.max >= lastHourCrowdScores.moderate && lastHourCrowdScores.max >= lastHourCrowdScores.min) {
+    if (crowdCounts.max >= crowdCounts.moderate && crowdCounts.max >= crowdCounts.min) {
       return {
         level: "High Crowd",
         color: "#F44336",
-        percentage: Math.round((lastHourCrowdScores.max / total) * 100),
+        percentage: Math.round((crowdCounts.max / totalActivities) * 100),
       };
-    } else if (lastHourCrowdScores.moderate >= lastHourCrowdScores.min) {
+    } else if (crowdCounts.moderate >= crowdCounts.min) {
       return {
         level: "Moderate Crowd",
         color: "#FF9800",
-        percentage: Math.round((lastHourCrowdScores.moderate / total) * 100),
+        percentage: Math.round((crowdCounts.moderate / totalActivities) * 100),
       };
     } else {
       return {
         level: "Low Crowd",
         color: "#4CAF50",
-        percentage: Math.round((lastHourCrowdScores.min / total) * 100),
+        percentage: Math.round((crowdCounts.min / totalActivities) * 100),
       };
     }
   };
@@ -214,32 +200,46 @@ const MainPanelScreen = () => {
     const now = new Date();
     const time = new Date(timestamp);
     const diffInMinutes = Math.floor((now - time) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'Just now';
+
+    if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     return `${Math.floor(diffInMinutes / 60)}h ${diffInMinutes % 60}m ago`;
   };
 
   const renderCrowdChart = (location) => {
-    const { lastHourCrowdScores } = location;
-    const total = lastHourCrowdScores.min + lastHourCrowdScores.moderate + lastHourCrowdScores.max;
+    const totalActivities = location.activities.length;
 
-    if (total === 0) {
+    if (totalActivities === 0) {
       return (
         <View style={styles.chartContainer}>
-          <Text style={styles.noDataText}>No updates in the last hour</Text>
-          <Text style={styles.noDataSubtext}>Waiting for crowd level reports...</Text>
+          <Text style={styles.noDataText}>No activity reports yet</Text>
+          <Text style={styles.noDataSubtext}>
+            Waiting for crowd level reports...
+          </Text>
         </View>
       );
     }
 
-    const minPercentage = (lastHourCrowdScores.min / total) * 100;
-    const moderatePercentage = (lastHourCrowdScores.moderate / total) * 100;
-    const maxPercentage = (lastHourCrowdScores.max / total) * 100;
+    // Count crowd levels from all activities
+    const crowdCounts = location.activities.reduce(
+      (acc, activity) => {
+        if (activity.crowdLevel === "min") acc.min++;
+        else if (activity.crowdLevel === "moderate") acc.moderate++;
+        else if (activity.crowdLevel === "max") acc.max++;
+        return acc;
+      },
+      { min: 0, moderate: 0, max: 0 }
+    );
+
+    const minPercentage = (crowdCounts.min / totalActivities) * 100;
+    const moderatePercentage = (crowdCounts.moderate / totalActivities) * 100;
+    const maxPercentage = (crowdCounts.max / totalActivities) * 100;
 
     return (
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Last Hour Activity ({total} reports)</Text>
+        <Text style={styles.chartTitle}>
+          Activity Summary ({totalActivities} reports)
+        </Text>
 
         <View style={styles.chartBar}>
           <View
@@ -277,7 +277,7 @@ const MainPanelScreen = () => {
               style={[styles.legendColor, { backgroundColor: "#4CAF50" }]}
             />
             <Text style={styles.legendText}>
-              Low ({lastHourCrowdScores.min})
+              Low ({crowdCounts.min})
             </Text>
           </View>
           <View style={styles.legendItem}>
@@ -285,7 +285,7 @@ const MainPanelScreen = () => {
               style={[styles.legendColor, { backgroundColor: "#FF9800" }]}
             />
             <Text style={styles.legendText}>
-              Moderate ({lastHourCrowdScores.moderate})
+              Moderate ({crowdCounts.moderate})
             </Text>
           </View>
           <View style={styles.legendItem}>
@@ -293,16 +293,17 @@ const MainPanelScreen = () => {
               style={[styles.legendColor, { backgroundColor: "#F44336" }]}
             />
             <Text style={styles.legendText}>
-              High ({lastHourCrowdScores.max})
+              High ({crowdCounts.max})
             </Text>
           </View>
         </View>
 
         {/* Show most recent update time */}
-        {location.lastHourActivities.length > 0 && (
+        {location.activities.length > 0 && (
           <View style={styles.lastUpdateContainer}>
             <Text style={styles.lastUpdateText}>
-              Last update: {formatTimeAgo(location.lastHourActivities[0].timestamp)}
+              Last update:{" "}
+              {formatTimeAgo(location.activities[0].timestamp)}
             </Text>
           </View>
         )}
@@ -312,7 +313,7 @@ const MainPanelScreen = () => {
 
   const renderLocationItem = ({ item }) => {
     const crowdInfo = getCrowdLevel(item);
-    const totalReports = item.lastHourCrowdScores.min + item.lastHourCrowdScores.moderate + item.lastHourCrowdScores.max;
+    const totalReports = item.activities.length;
 
     return (
       <TouchableOpacity
@@ -345,7 +346,7 @@ const MainPanelScreen = () => {
 
         <View style={styles.totalReports}>
           <Text style={styles.totalReportsText}>
-            Reports in Last Hour: {totalReports}
+            Total Reports: {totalReports}
           </Text>
           <Text style={styles.tapHint}>Tap to view detailed analytics</Text>
         </View>

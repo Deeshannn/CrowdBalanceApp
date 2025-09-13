@@ -1,4 +1,41 @@
 const Location = require("../model/LocationModel");
+const { Organizer } = require("../model/UserModel");
+
+// Get single location with its organizers
+const getLocationByIdOrganizers = async (req, res) => {
+  try {
+    const location = await Location.findById(req.params.locationId);
+
+    if (!location) {
+      return res.status(404).json({
+        success: false,
+        message: "Location not found",
+      });
+    }
+
+    // Find all organizers assigned to this hall
+    const organizers = await Organizer.find({
+      assignedHall: location.name, // matching hall name
+    }).select("-password");
+
+    // Add them into response
+    const locationData = {
+      ...location.toObject(),
+      organizers,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: locationData,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching location",
+      error: error.message,
+    });
+  }
+};
 
 // Helper function to calculate scores from activity log
 const calculateScoresFromActivityLog = (activityLog) => {
@@ -36,52 +73,6 @@ const calculateScoresFromActivityLog = (activityLog) => {
   };
 };
 
-// Helper function to calculate scores from activity log for a specific time period
-const calculateScoresFromActivityLogForPeriod = (activityLog, hours = null) => {
-  if (!activityLog || activityLog.length === 0) {
-    return {
-      minCrowdScore: 0,
-      moderateCrowdScore: 0,
-      maxCrowdScore: 0,
-      total: 0,
-    };
-  }
-
-  let filteredActivities = activityLog;
-
-  // If hours specified, filter activities within that time period
-  if (hours !== null) {
-    const timeAgo = new Date(Date.now() - hours * 60 * 60 * 1000);
-    filteredActivities = activityLog.filter(
-      (activity) => new Date(activity.timestamp) >= timeAgo
-    );
-  }
-
-  const scores = filteredActivities.reduce(
-    (acc, activity) => {
-      switch (activity.crowdLevel) {
-        case "min":
-          acc.minCrowdScore += 1;
-          break;
-        case "moderate":
-          acc.moderateCrowdScore += 1;
-          break;
-        case "max":
-          acc.maxCrowdScore += 1;
-          break;
-      }
-      return acc;
-    },
-    { minCrowdScore: 0, moderateCrowdScore: 0, maxCrowdScore: 0 }
-  );
-
-  return {
-    ...scores,
-    total:
-      scores.minCrowdScore + scores.moderateCrowdScore + scores.maxCrowdScore,
-  };
-};
-
 // Get all locations
 const getAllLocations = async (req, res) => {
   try {
@@ -92,20 +83,14 @@ const getAllLocations = async (req, res) => {
       const calculatedScores = calculateScoresFromActivityLog(
         location.activityLog
       );
-      const lastHourScores = calculateScoresFromActivityLogForPeriod(
-        location.activityLog,
-        1
-      );
 
       return {
         ...location.toObject(),
-        // Replace database scores with calculated scores
+        // Add calculated scores (these replace the removed database fields)
         minCrowdScore: calculatedScores.minCrowdScore,
         moderateCrowdScore: calculatedScores.moderateCrowdScore,
         maxCrowdScore: calculatedScores.maxCrowdScore,
         totalScore: calculatedScores.total,
-        // Add last hour scores for additional info
-        lastHourScores: lastHourScores,
       };
     });
 
@@ -137,10 +122,6 @@ const getLocationById = async (req, res) => {
     const calculatedScores = calculateScoresFromActivityLog(
       location.activityLog
     );
-    const lastHourScores = calculateScoresFromActivityLogForPeriod(
-      location.activityLog,
-      1
-    );
 
     const locationWithCalculatedScores = {
       ...location.toObject(),
@@ -148,7 +129,6 @@ const getLocationById = async (req, res) => {
       moderateCrowdScore: calculatedScores.moderateCrowdScore,
       maxCrowdScore: calculatedScores.maxCrowdScore,
       totalScore: calculatedScores.total,
-      lastHourScores: lastHourScores,
     };
 
     res.status(200).json({
@@ -164,7 +144,7 @@ const getLocationById = async (req, res) => {
   }
 };
 
-// Add new location (Main Panel only)
+// Add new location (Main Panel only) - UPDATED: Removed score initialization
 const addLocation = async (req, res) => {
   try {
     const { name, capacity } = req.body;
@@ -179,17 +159,26 @@ const addLocation = async (req, res) => {
     const newLocation = new Location({
       name,
       capacity,
-      maxCrowdScore: 0,
-      moderateCrowdScore: 0,
-      minCrowdScore: 0,
+      // REMOVED: maxCrowdScore, moderateCrowdScore, minCrowdScore initialization
       activityLog: [], // Initialize empty activity log
     });
 
     const savedLocation = await newLocation.save();
+    
+    // Return with calculated scores (all will be 0 for new location)
+    const calculatedScores = calculateScoresFromActivityLog([]);
+    const locationWithScores = {
+      ...savedLocation.toObject(),
+      minCrowdScore: calculatedScores.minCrowdScore,
+      moderateCrowdScore: calculatedScores.moderateCrowdScore,
+      maxCrowdScore: calculatedScores.maxCrowdScore,
+      totalScore: calculatedScores.total,
+    };
+    
     res.status(201).json({
       success: true,
       message: "Location added successfully",
-      data: savedLocation,
+      data: locationWithScores,
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -206,10 +195,10 @@ const addLocation = async (req, res) => {
   }
 };
 
-// Update crowd score (Organizers only) - UPDATED WITH ACTIVITY TRACKING
+// Update crowd score (Organizers only) - UPDATED: Only uses activity log
 const updateCrowdScore = async (req, res) => {
   console.log("location id is: " + req.params.locationId);
-  console.log(req.body);
+  console.log("Request body:", req.body);
 
   try {
     const { locationId } = req.params;
@@ -230,27 +219,21 @@ const updateCrowdScore = async (req, res) => {
       });
     }
 
-    // Add new activity to activity log
+    // Create new activity entry
     const newActivity = {
       crowdLevel: crowdLevel,
       timestamp: new Date(),
       organizerId: "organizer", // You might want to get this from auth token
     };
 
-    // Add to activity log
+    // IMPORTANT: Only add to activity log, don't touch the old score fields
     location.activityLog.push(newActivity);
-
-    // Update lastUpdated
     location.lastUpdated = new Date();
 
-    // ✅ Remove activities older than 1 hour
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    location.activityLog = location.activityLog.filter(
-      (activity) => new Date(activity.timestamp) >= oneHourAgo
-    );
-
-    // Save the location
+    // Save the location (this preserves ALL activity log data)
     await location.save();
+
+    console.log(`Activity added to location ${location.name}. Total activities: ${location.activityLog.length}`);
 
     // Calculate new scores from activity log
     const calculatedScores = calculateScoresFromActivityLog(
@@ -268,7 +251,7 @@ const updateCrowdScore = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `${crowdLevel} crowd score updated successfully`,
+      message: `${crowdLevel} crowd level updated successfully. Total reports: ${calculatedScores.total}`,
       data: locationWithCalculatedScores,
     });
   } catch (error) {
@@ -298,10 +281,8 @@ const getLocationActivities = async (req, res) => {
     const calculatedScores = calculateScoresFromActivityLog(
       location.activityLog
     );
-    const lastHourScores = calculateScoresFromActivityLogForPeriod(
-      location.activityLog,
-      1
-    );
+
+    console.log(`Returning ${location.activityLog.length} activities for location ${location.name}`);
 
     res.status(200).json({
       success: true,
@@ -309,7 +290,6 @@ const getLocationActivities = async (req, res) => {
         locationName: location.name,
         activities: location.activityLog || [],
         calculatedScores: calculatedScores,
-        lastHourScores: lastHourScores,
         lastUpdated: location.lastUpdated,
       },
     });
@@ -329,6 +309,11 @@ const updateLocation = async (req, res) => {
     const { locationId } = req.params;
     const updates = req.body;
 
+    // Don't allow updates to the old score fields if they're accidentally included
+    delete updates.maxCrowdScore;
+    delete updates.moderateCrowdScore;
+    delete updates.minCrowdScore;
+
     const location = await Location.findByIdAndUpdate(locationId, updates, {
       new: true,
       runValidators: true,
@@ -341,10 +326,23 @@ const updateLocation = async (req, res) => {
       });
     }
 
+    // Calculate and return with scores
+    const calculatedScores = calculateScoresFromActivityLog(
+      location.activityLog
+    );
+
+    const locationWithScores = {
+      ...location.toObject(),
+      minCrowdScore: calculatedScores.minCrowdScore,
+      moderateCrowdScore: calculatedScores.moderateCrowdScore,
+      maxCrowdScore: calculatedScores.maxCrowdScore,
+      totalScore: calculatedScores.total,
+    };
+
     res.status(200).json({
       success: true,
       message: "Location updated successfully",
-      data: location,
+      data: locationWithScores,
     });
   } catch (error) {
     res.status(500).json({
@@ -357,6 +355,8 @@ const updateLocation = async (req, res) => {
 
 // Delete location (Main Panel only)
 const deleteLocation = async (req, res) => {
+  console.log("Coming to deleting Locations...");
+
   try {
     const { locationId } = req.params;
 
@@ -394,4 +394,5 @@ module.exports = {
   updateLocation,
   deleteLocation,
   getLocationActivities,
+  getLocationByIdOrganizers
 };

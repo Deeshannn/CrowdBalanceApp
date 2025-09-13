@@ -18,9 +18,7 @@ const LocationDetail = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // API Base URL
-  // const API_BASE_URL = "http://192.168.1.2:4000/locations";
+  const [organizers, setOrganizers] = useState([]);
 
   const fetchLocationDetails = useCallback(async (locationId) => {
     if (!locationId) return;
@@ -55,6 +53,16 @@ const LocationDetail = () => {
       if (activitiesResult.success) {
         setActivities(activitiesResult.data.activities || []);
       }
+
+      // Fetch assigned organizers for this location
+      const organizersResponse = await fetch(
+        `${API_BASE_URL}/locations/${locationId}/organizers`
+      );
+      const organizersResult = await organizersResponse.json();
+
+      if (organizersResult.success) {
+        setOrganizers(organizersResult.data.organizers || []);
+      }
     } catch (error) {
       console.error("Error fetching location details:", error);
     } finally {
@@ -76,8 +84,8 @@ const LocationDetail = () => {
     }
   }, [params.locationData, fetchLocationDetails]);
 
-  // Calculate last hour crowd data from activities
-  const getLastHourCrowdData = () => {
+  // Calculate total crowd data from all activities
+  const getTotalCrowdData = () => {
     if (!activities || activities.length === 0) {
       return {
         minCrowdScore: 0,
@@ -211,7 +219,7 @@ const LocationDetail = () => {
       return (
         <View style={styles.chartContainer}>
           <Text style={styles.noDataText}>
-            No crowd data available for the last hour
+            No crowd data available
           </Text>
         </View>
       );
@@ -223,10 +231,6 @@ const LocationDetail = () => {
 
     return (
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>
-          Crowd Level Distribution (Last Hour)
-        </Text>
-
         <View style={styles.chartBar}>
           <View
             style={[
@@ -256,21 +260,6 @@ const LocationDetail = () => {
             ]}
           />
         </View>
-
-        <View style={styles.percentageContainer}>
-          <Text style={styles.percentageText}>
-            Current Dominant Level:{" "}
-            <Text
-              style={[
-                styles.percentageValue,
-                { color: getCrowdLevel(crowdData).color },
-              ]}
-            >
-              {getCrowdLevel(crowdData).level} (
-              {getCrowdLevel(crowdData).percentage}%)
-            </Text>
-          </Text>
-        </View>
       </View>
     );
   };
@@ -280,9 +269,9 @@ const LocationDetail = () => {
       return (
         <View style={styles.noActivityContainer}>
           <Icon name="schedule" size={48} color="#ccc" />
-          <Text style={styles.noActivityText}>No recent updates</Text>
+          <Text style={styles.noActivityText}>No activity reports</Text>
           <Text style={styles.noActivitySubtext}>
-            Organizers haven't updated crowd levels in the last hour
+            Organizers haven't updated crowd levels yet
           </Text>
         </View>
       );
@@ -321,9 +310,46 @@ const LocationDetail = () => {
     );
   };
 
-  // Get last hour data instead of all-time data
-  const lastHourData = getLastHourCrowdData();
-  const crowdInfo = getCrowdLevel(lastHourData);
+  const renderAssignedOrganizers = () => {
+    if (organizers.length === 0) {
+      return (
+        <View style={styles.noOrganizersContainer}>
+          <Icon name="group" size={48} color="#ccc" />
+          <Text style={styles.noOrganizersText}>No organizers assigned</Text>
+          <Text style={styles.noOrganizersSubtext}>
+            Assign organizers to help manage this location
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.organizersList}>
+        {organizers.map((organizer, index) => (
+          <View key={index} style={styles.organizerItem}>
+            <View style={styles.organizerIcon}>
+              <Icon name="person" size={24} color="#007AFF" />
+            </View>
+            <View style={styles.organizerContent}>
+              <Text style={styles.organizerName}>
+                {organizer.name || `Organizer ${index + 1}`}
+              </Text>
+              <Text style={styles.organizerInfo}>
+                Email: {organizer.email}
+              </Text>
+              <Text style={styles.organizerInfo}>
+                Phone: {organizer.phone || 'N/A'}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  // Get total data instead of last hour data
+  const totalData = getTotalCrowdData();
+  const crowdInfo = getCrowdLevel(totalData);
 
   if (loading) {
     return (
@@ -334,15 +360,14 @@ const LocationDetail = () => {
     );
   }
 
-  // Fixed navigation function - don't call immediately
   const handleAssignOrganizers = () => {
     router.push({
       pathname: "./AssignOrganizers",
-      params: { 
+      params: {
         crowdLevel: crowdInfo.level,
         locationId: location._id,
         locationName: location.name,
-        locationCapacity: location.capacity.toString()
+        locationCapacity: location.capacity.toString(),
       },
     });
   };
@@ -387,25 +412,24 @@ const LocationDetail = () => {
           <Text style={styles.locationCapacity}>
             Capacity: {location.capacity} people
           </Text>
-          <Text style={styles.locationId}>Location ID: {location._id}</Text>
         </View>
 
         {/* Live Activity Feed */}
         <View style={styles.activityCard}>
           <View style={styles.activityHeader}>
             <Icon name="update" size={20} color="#007AFF" />
-            <Text style={styles.cardTitle}>Live Activity Feed (Last Hour)</Text>
+            <Text style={styles.cardTitle}>Activity Feed</Text>
           </View>
           {renderActivityFeed()}
         </View>
 
-        {/* Crowd Statistics Card - Now showing last hour data */}
+        {/* Crowd Statistics Card */}
         <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Crowd Statistics (Last Hour)</Text>
+          <Text style={styles.cardTitle}>Crowd Statistics</Text>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{lastHourData.total}</Text>
+              <Text style={styles.statNumber}>{totalData.total}</Text>
               <Text style={styles.statLabel}>Total Reports</Text>
             </View>
             <View style={styles.statItem}>
@@ -421,15 +445,15 @@ const LocationDetail = () => {
           </View>
         </View>
 
-        {/* Chart Card - Now showing last hour data */}
+        {/* Chart Card */}
         <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Crowd Level Analysis (Last Hour)</Text>
-          {renderCrowdChart(lastHourData)}
+          <Text style={styles.cardTitle}>Crowd Level Analysis</Text>
+          {renderCrowdChart(totalData)}
         </View>
 
-        {/* Individual Score Breakdown - Now showing last hour data */}
+        {/* Individual Score Breakdown */}
         <View style={styles.breakdownCard}>
-          <Text style={styles.cardTitle}>Detailed Breakdown (Last Hour)</Text>
+          <Text style={styles.cardTitle}>Detailed Breakdown</Text>
 
           <View style={styles.scoreItem}>
             <View style={styles.scoreHeader}>
@@ -438,7 +462,7 @@ const LocationDetail = () => {
               />
               <Text style={styles.scoreTitle}>Low Crowd Reports</Text>
             </View>
-            <Text style={styles.scoreValue}>{lastHourData.minCrowdScore}</Text>
+            <Text style={styles.scoreValue}>{totalData.minCrowdScore}</Text>
           </View>
 
           <View style={styles.scoreItem}>
@@ -449,7 +473,7 @@ const LocationDetail = () => {
               <Text style={styles.scoreTitle}>Moderate Crowd Reports</Text>
             </View>
             <Text style={styles.scoreValue}>
-              {lastHourData.moderateCrowdScore}
+              {totalData.moderateCrowdScore}
             </Text>
           </View>
 
@@ -460,8 +484,20 @@ const LocationDetail = () => {
               />
               <Text style={styles.scoreTitle}>High Crowd Reports</Text>
             </View>
-            <Text style={styles.scoreValue}>{lastHourData.maxCrowdScore}</Text>
+            <Text style={styles.scoreValue}>{totalData.maxCrowdScore}</Text>
           </View>
+        </View>
+
+        {/* Assigned Organizers Card */}
+        <View style={styles.organizersCard}>
+          <View style={styles.organizersHeader}>
+            <Icon name="group" size={20} color="#007AFF" />
+            <Text style={styles.cardTitle}>Assigned Organizers</Text>
+            <View style={styles.organizersCount}>
+              <Text style={styles.countText}>{organizers.length}</Text>
+            </View>
+          </View>
+          {renderAssignedOrganizers()}
         </View>
 
         <View style={styles.buttonContainer}>
@@ -469,7 +505,12 @@ const LocationDetail = () => {
             style={[styles.button, styles.assignButton]}
             onPress={handleAssignOrganizers}
           >
-            <Icon name="person-add" size={20} color="white" style={styles.buttonIcon} />
+            <Icon
+              name="person-add"
+              size={20}
+              color="white"
+              style={styles.buttonIcon}
+            />
             <Text style={styles.buttonText}>Assign Organizers</Text>
           </TouchableOpacity>
         </View>
@@ -478,7 +519,12 @@ const LocationDetail = () => {
             style={[styles.button, styles.homeButton]}
             onPress={handleHome}
           >
-            <Icon name="home" size={20} color="white" style={styles.buttonIcon} />
+            <Icon
+              name="home"
+              size={20}
+              color="white"
+              style={styles.buttonIcon}
+            />
             <Text style={styles.buttonText}>Home</Text>
           </TouchableOpacity>
         </View>
@@ -657,7 +703,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -816,7 +862,87 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
-  }
+  },
+  // Organizers Styles
+  organizersCard: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 15,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  organizersHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  organizersCount: {
+    backgroundColor: "#007AFF",
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: "auto",
+  },
+  countText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  organizersList: {
+    marginTop: 10,
+  },
+  organizerItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  organizerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E3F2FD",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  organizerContent: {
+    flex: 1,
+  },
+  organizerName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  organizerInfo: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 2,
+  },
+  noOrganizersContainer: {
+    alignItems: "center",
+    paddingVertical: 30,
+  },
+  noOrganizersText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  noOrganizersSubtext: {
+    fontSize: 12,
+    color: "#999",
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
 });
 
 export default LocationDetail;

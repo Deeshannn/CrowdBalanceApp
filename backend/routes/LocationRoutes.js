@@ -20,7 +20,10 @@ router.get('/:locationId', locationController.getLocationById);
 // Update location details (Main Panel only)
 router.put('/:locationId', locationController.updateLocation);
 
+
+router.get("/:locationId/organizers", locationController.getLocationByIdOrganizers);
+
 // Delete location (Main Panel only)
-router.delete('/:locationId', locationController.deleteLocation);
+// router.delete('/:locationId', locationController.deleteLocation);
 
 module.exports = router;

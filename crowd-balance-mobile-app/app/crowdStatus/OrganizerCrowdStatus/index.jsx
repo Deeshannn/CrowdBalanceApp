@@ -16,103 +16,10 @@ const OrganizerScreen = () => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [scoreReductionStatus, setScoreReductionStatus] = useState(null);
-  const refreshInterval = useRef(null);
 
   useEffect(() => {
     fetchLocations();
-    fetchScoreReductionStatus();
-
-    // Set up automatic refresh every 30 seconds to see real-time score changes
-    refreshInterval.current = setInterval(() => {
-      if (!refreshing && !loading) {
-        fetchLocations();
-      }
-  });
-
-// export default OrganizerScreen; 30000);
-
-    return () => {
-      if (refreshInterval.current) {
-        clearInterval(refreshInterval.current);
-      }
-    };
   }, []);
-
-  // Fetch score reduction status from backend
-  const fetchScoreReductionStatus = async () => {
-    console.log("Trying to fetch the score reduction data...");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/`);
-      console.log("Response status:", response.status);
-      console.log(
-        "Response headers:",
-        Object.fromEntries([...response.headers])
-      );
-
-      // Check what type of content we're getting
-      const responseText = await response.text();
-      console.log("Raw response:", responseText.substring(0, 200)); // First 200 chars
-
-      // Only try to parse as JSON if it looks like JSON
-      if (
-        responseText.trim().startsWith("{") ||
-        responseText.trim().startsWith("[")
-      ) {
-        const result = JSON.parse(responseText);
-        if (result.success) {
-          setScoreReductionStatus(result.data);
-        }
-      } else {
-        console.error("Server returned non-JSON response:", responseText);
-      }
-    } catch (error) {
-      console.error("Error fetching score reduction status:", error);
-    }
-  };
-
-  // Calculate crowd data for the last hour from activityLog
-  const getLastHourCrowdDataFromActivityLog = (activityLog) => {
-    if (!activityLog || activityLog.length === 0) {
-      return {
-        minCrowdScore: 0,
-        moderateCrowdScore: 0,
-        maxCrowdScore: 0,
-        total: 0,
-      };
-    }
-
-    // Filter activities from the last hour
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const lastHourActivities = activityLog.filter(
-      (activity) => new Date(activity.timestamp) >= oneHourAgo
-    );
-
-    const counts = lastHourActivities.reduce(
-      (acc, activity) => {
-        switch (activity.crowdLevel) {
-          case "min":
-            acc.minCrowdScore += 1;
-            break;
-          case "moderate":
-            acc.moderateCrowdScore += 1;
-            break;
-          case "max":
-            acc.maxCrowdScore += 1;
-            break;
-        }
-        return acc;
-      },
-      { minCrowdScore: 0, moderateCrowdScore: 0, maxCrowdScore: 0 }
-    );
-
-    return {
-      ...counts,
-      total:
-        counts.minCrowdScore + counts.moderateCrowdScore + counts.maxCrowdScore,
-    };
-  };
 
   // Calculate total scores from entire activityLog
   const getTotalCrowdDataFromActivityLog = (activityLog) => {
@@ -179,8 +86,12 @@ const OrganizerScreen = () => {
       const result = await response.json();
 
       if (result.success) {
-        // The backend now returns calculated scores, but we'll also calculate from activityLog for consistency
-        setLocations(result.data);
+        // Filter out any potentially corrupted location data
+        const validLocations = result.data.filter(location => 
+          location && location._id && location.name && location.capacity
+        );
+        setLocations(validLocations);
+        console.log(`Loaded ${validLocations.length} valid locations`);
       } else {
         Alert.alert("Error", "Failed to fetch locations");
       }
@@ -214,48 +125,12 @@ const OrganizerScreen = () => {
         Alert.alert("Success", `${crowdLevel} crowd level updated!`);
         fetchLocations(); // Refresh the list
       } else {
-        Alert.alert("Error", result.message);
+        Alert.alert("Error", result.message || "Failed to update crowd level");
       }
     } catch (error) {
       Alert.alert("Error", "Network error occurred");
       console.error("Update error:", error);
     }
-  };
-
-  // Manual trigger for score reduction (for testing)
-  const triggerScoreReduction = async () => {
-    Alert.alert(
-      "Manual Score Reduction",
-      "This will reduce all location scores by 1. Continue?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reduce Scores",
-          onPress: async () => {
-            try {
-              const response = await fetch(
-                `${API_BASE_URL}/locations/reduce-scores`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                }
-              );
-
-              const result = await response.json();
-
-              if (result.success) {
-                Alert.alert("Success", result.message);
-                fetchLocations();
-              } else {
-                Alert.alert("Error", result.message);
-              }
-            } catch (error) {
-              Alert.alert("Error", "Network error occurred");
-            }
-          },
-        },
-      ]
-    );
   };
 
   const confirmCrowdUpdate = (locationId, locationName, crowdLevel) => {
@@ -282,7 +157,6 @@ const OrganizerScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchLocations();
-    fetchScoreReductionStatus();
   };
 
   const formatTimeAgo = (timestamp) => {
@@ -298,7 +172,6 @@ const OrganizerScreen = () => {
   const renderLocationItem = ({ item }) => {
     // Calculate scores from activityLog instead of using database scores
     const totalScores = getTotalCrowdDataFromActivityLog(item.activityLog || []);
-    const lastHourData = getLastHourCrowdDataFromActivityLog(item.activityLog || []);
     const currentLevel = getCurrentCrowdLevel(item);
 
     // Get the most recent activity for display
@@ -306,11 +179,6 @@ const OrganizerScreen = () => {
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
     const mostRecentActivity = sortedActivities[0];
-
-    // Check if there are any score reductions in recent activities
-    const recentReductions = sortedActivities
-      .filter((activity) => activity.type === "score_reduction")
-      .slice(0, 3);
 
     return (
       <View style={styles.locationCard}>
@@ -368,65 +236,7 @@ const OrganizerScreen = () => {
               </Text>
             </View>
           )}
-
-          {/* Score Reduction Indicators */}
-          {recentReductions.length > 0 && (
-            <View style={styles.reductionIndicator}>
-              <Icon name="trending-down" size={12} color="#666" />
-              <Text style={styles.reductionText}>
-                {recentReductions.length} automatic reduction
-                {recentReductions.length > 1 ? "s" : ""} recently
-              </Text>
-            </View>
-          )}
         </View>
-
-        {/* Last Hour Activity (Filtered View) */}
-        {/* <View style={styles.activityContainer}>
-          <Text style={styles.activityTitle}>Last Hour Activity:</Text>
-          <View style={styles.scoreRow}>
-            <View style={styles.scoreItem}>
-              <Text
-                style={[styles.scoreNumber, { color: "#4CAF50", fontSize: 16 }]}
-              >
-                {lastHourData.minCrowdScore}
-              </Text>
-              <Text style={styles.scoreLabel}>Reports</Text>
-            </View>
-            <View style={styles.scoreItem}>
-              <Text
-                style={[styles.scoreNumber, { color: "#FF9800", fontSize: 16 }]}
-              >
-                {lastHourData.moderateCrowdScore}
-              </Text>
-              <Text style={styles.scoreLabel}>Reports</Text>
-            </View>
-            <View style={styles.scoreItem}>
-              <Text
-                style={[styles.scoreNumber, { color: "#F44336", fontSize: 16 }]}
-              >
-                {lastHourData.maxCrowdScore}
-              </Text>
-              <Text style={styles.scoreLabel}>Reports</Text>
-            </View>
-          </View>
-
-          {lastHourData.total === 0 && (
-            <Text style={styles.noDataText}>No reports in the last hour</Text>
-          )}
-        </View> */}
-
-        {/* Activity Log Summary */}
-        {/* <View style={styles.activitySummaryContainer}>
-          <Text style={styles.activitySummaryTitle}>
-            Activity Log: {(item.activityLog || []).length} total entries
-          </Text>
-          {mostRecentActivity && (
-            <Text style={styles.activitySummaryText}>
-              Last: {mostRecentActivity.crowdLevel} crowd ({formatTimeAgo(mostRecentActivity.timestamp)})
-            </Text>
-          )}
-        </View> */}
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -470,30 +280,7 @@ const OrganizerScreen = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Organizer Panel</Text>
-
-        {/* Score Reduction Status */}
-        {scoreReductionStatus && (
-          <View style={styles.statusContainer}>
-            <Icon
-              name={
-                scoreReductionStatus.isRunning ? "schedule" : "schedule-off"
-              }
-              size={16}
-              color={scoreReductionStatus.isRunning ? "#4CAF50" : "#F44336"}
-            />
-            <Text
-              style={[
-                styles.statusText,
-                {
-                  color: scoreReductionStatus.isRunning ? "#4CAF50" : "#F44336",
-                },
-              ]}
-            >
-              Auto-reduction:{" "}
-              {scoreReductionStatus.isRunning ? "Active" : "Inactive"}
-            </Text>
-          </View>
-        )}
+        <Text style={styles.subtitle}>Update crowd levels in real-time</Text>
       </View>
 
       <FlatList
@@ -505,6 +292,13 @@ const OrganizerScreen = () => {
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Icon name="location-off" size={48} color="#ccc" />
+            <Text style={styles.emptyText}>No locations available</Text>
+            <Text style={styles.emptySubtext}>Add locations from the main panel</Text>
+          </View>
+        }
       />
     </View>
   );
@@ -537,25 +331,29 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.8)",
     marginTop: 5,
   },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    marginLeft: 4,
-    fontWeight: "bold",
-  },
   listContainer: {
     padding: 15,
-    paddingBottom: 80, // Space for admin controls
+    paddingBottom: 80,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: "#666",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: 50,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#666",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
   },
   locationCard: {
     backgroundColor: "white",
@@ -587,6 +385,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
+  statusText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
+    marginLeft: 4,
+  },
   locationCapacity: {
     fontSize: 14,
     color: "#666",
@@ -594,12 +398,6 @@ const styles = StyleSheet.create({
   },
   scoresContainer: {
     backgroundColor: "#f8f9fa",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  activityContainer: {
-    backgroundColor: "#fff3cd",
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,
@@ -628,6 +426,17 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 2,
   },
+  totalContainer: {
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+    paddingTop: 10,
+    alignItems: "center",
+  },
+  totalText: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "bold",
+  },
   lastUpdateContainer: {
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
@@ -637,12 +446,6 @@ const styles = StyleSheet.create({
   lastUpdateText: {
     fontSize: 11,
     color: "#666",
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  noDataText: {
-    fontSize: 12,
-    color: "#999",
     textAlign: "center",
     fontStyle: "italic",
   },
