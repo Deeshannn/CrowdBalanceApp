@@ -382,7 +382,7 @@ const OrganizerScreen = () => {
         </View>
 
         {/* Last Hour Activity (Filtered View) */}
-        <View style={styles.activityContainer}>
+        {/* <View style={styles.activityContainer}>
           <Text style={styles.activityTitle}>Last Hour Activity:</Text>
           <View style={styles.scoreRow}>
             <View style={styles.scoreItem}>
@@ -414,10 +414,10 @@ const OrganizerScreen = () => {
           {lastHourData.total === 0 && (
             <Text style={styles.noDataText}>No reports in the last hour</Text>
           )}
-        </View>
+        </View> */}
 
         {/* Activity Log Summary */}
-        <View style={styles.activitySummaryContainer}>
+        {/* <View style={styles.activitySummaryContainer}>
           <Text style={styles.activitySummaryTitle}>
             Activity Log: {(item.activityLog || []).length} total entries
           </Text>
@@ -426,7 +426,7 @@ const OrganizerScreen = () => {
               Last: {mostRecentActivity.crowdLevel} crowd ({formatTimeAgo(mostRecentActivity.timestamp)})
             </Text>
           )}
-        </View>
+        </View> */}
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -470,7 +470,6 @@ const OrganizerScreen = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Organizer Panel</Text>
-        <Text style={styles.subtitle}>Scores Calculated from Activity Log</Text>
 
         {/* Score Reduction Status */}
         {scoreReductionStatus && (

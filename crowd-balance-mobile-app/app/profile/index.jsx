@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -54,13 +60,19 @@ const Profile = () => {
         status,
       };
 
+      console.log("API URL:", `${API_BASE_URL}/users/${user._id}`);
+      console.log("User ID:", user._id);
+      console.log("Updated User Data:", updatedUser);
+
       const res = await axios.put(
-        `${API_BASE_URL}/users/${user._id}`,
+        `${API_BASE_URL}/users/organizers/${user._id}`,
         updatedUser
       );
+      console.log("updated...");
 
       setUser(res.data.user); // Update UI
       setIsEditing(false);
+      fetchUser();
     } catch (err) {
       console.error("Error updating profile:", err);
     }
@@ -171,11 +183,11 @@ const Profile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center", 
-    backgroundColor: "#f5f6fa" 
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f6fa",
   },
   card: {
     width: "90%",
@@ -188,23 +200,23 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: "bold", 
-    marginBottom: 20, 
-    textAlign: "center", 
-    color: "#2c3e50" 
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#2c3e50",
   },
-  label: { 
-    fontSize: 14, 
-    fontWeight: "bold", 
-    color: "#555", 
-    marginTop: 10 
+  label: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#555",
+    marginTop: 10,
   },
-  value: { 
-    fontSize: 16, 
-    color: "#333", 
-    marginBottom: 5 
+  value: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 5,
   },
   input: {
     borderWidth: 1,
@@ -255,14 +267,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
   },
-  logoutText: { 
-    color: "white", 
-    fontWeight: "600", 
-    fontSize: 16 
+  logoutText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
   },
-  loading: { 
-    fontSize: 18, 
-    color: "#555" 
+  loading: {
+    fontSize: 18,
+    color: "#555",
   },
 });
 

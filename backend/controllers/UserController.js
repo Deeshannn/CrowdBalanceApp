@@ -163,6 +163,7 @@ const getByID = async (req, res, next) => {
 
 // Update organizer - FIXED FIELDS
 const updateOrganizer = async (req, res, next) => {
+  console.log("Comming to update organizer controller...");
   const id = req.params.id;
   const { email, password, name, phone, assignedHall, status } = req.body;
 

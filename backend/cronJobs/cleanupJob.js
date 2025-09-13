@@ -1,47 +1,51 @@
 const cron = require("node-cron");
 const Location = require("../model/LocationModel");
 
-// Run every 2 minutes
-cron.schedule("0 * * * *", async () => {
+// Run every hour to clean old activity log entries
+cron.schedule("*/2 * * * *", async () => {
   console.log("Running activity log cleanup...");
 
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  // Calculate timestamp for 1 hour ago (CORRECTED)
+  const oneHourAgo = new Date(Date.now() - 2 * 60 * 1000);
+  console.log(`Cleaning entries older than: ${oneHourAgo.toISOString()}`);
 
   try {
     const locations = await Location.find();
     let totalCleaned = 0;
 
     for (const loc of locations) {
-      if (!loc.activityLog || loc.activityLog.length === 0) continue;
+      if (!loc.activityLog || loc.activityLog.length === 0) {
+        console.log(`Location "${loc.name}": No activity log to clean`);
+        continue;
+      }
 
       const originalLength = loc.activityLog.length;
 
-
-      // Filter activities: keep entries newer than 2 minutes OR the latest entry
+      // Keep only entries from the last hour (no exception for most recent)
       const filteredActivities = loc.activityLog.filter(activity => {
-        const activityTime = new Date(activity.timestamp).getTime();
-        // Keep if newer than 2 minutes ago OR if it's the latest entry
-        return activityTime > oneHourAgo.getTime() ;
+        const activityTime = new Date(activity.timestamp);
+        return activityTime > oneHourAgo;
       });
 
-      // Only save if there's a change
+      // Only update if there's a change
       if (filteredActivities.length !== originalLength) {
-        loc.activityLog = filteredActivities;
-        
-        // Use markModified to ensure Mongoose knows the array has changed
-        loc.markModified('activityLog');
-        
-        await loc.save();
+        // Use updateOne to ONLY modify the activityLog, not replace the entire document
+        await Location.updateOne(
+          { _id: loc._id },
+          { $set: { activityLog: filteredActivities } }
+        );
         
         const cleaned = originalLength - filteredActivities.length;
         totalCleaned += cleaned;
         
         console.log(`Location "${loc.name}": Cleaned ${cleaned} old entries, kept ${filteredActivities.length}`);
+      } else {
+        console.log(`Location "${loc.name}": No cleanup needed (${originalLength} entries all recent)`);
       }
     }
 
-    console.log(`✅ Cleanup complete. Total entries cleaned: ${totalCleaned}`);
+    console.log(`✅ Activity log cleanup complete. Total entries cleaned: ${totalCleaned}`);
   } catch (err) {
-    console.error("❌ Cron job error:", err);
+    console.error("❌ Activity log cleanup error:", err);
   }
 });
