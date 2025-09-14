@@ -22,6 +22,7 @@ const MainPanelScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
   const [newLocationCapacity, setNewLocationCapacity] = useState("");
+  const [deleting, setDeleting] = useState(null); // Track which location is being deleted
 
   useEffect(() => {
     fetchLocations();
@@ -125,6 +126,49 @@ const MainPanelScreen = () => {
     } catch (error) {
       Alert.alert("Error", "Network error occurred");
     }
+  };
+
+  const deleteLocation = async (locationId, locationName) => {
+    Alert.alert(
+      "Delete Location",
+      `Are you sure you want to delete "${locationName}"? This action cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(locationId); // Show loading state for this location
+
+              const response = await fetch(`${API_BASE_URL}/locations/${locationId}`, {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+
+              const result = await response.json();
+
+              if (result.success) {
+                Alert.alert("Success", "Location deleted successfully!");
+                fetchLocations(); // Refresh the list to remove deleted location
+              } else {
+                Alert.alert("Error", result.message || "Failed to delete location");
+              }
+            } catch (error) {
+              console.error("Delete error:", error);
+              Alert.alert("Error", "Network error occurred while deleting");
+            } finally {
+              setDeleting(null); // Clear loading state
+            }
+          },
+        },
+      ]
+    );
   };
 
   const onRefresh = () => {
@@ -314,12 +358,14 @@ const MainPanelScreen = () => {
   const renderLocationItem = ({ item }) => {
     const crowdInfo = getCrowdLevel(item);
     const totalReports = item.activities.length;
+    const isDeleting = deleting === item._id;
 
     return (
       <TouchableOpacity
-        style={styles.locationCard}
+        style={[styles.locationCard, isDeleting && styles.deletingCard]}
         onPress={() => handleLocationPress(item)}
         activeOpacity={0.7}
+        disabled={isDeleting}
       >
         <View style={styles.locationHeader}>
           <Text style={styles.locationName}>{item.name}</Text>
@@ -329,6 +375,23 @@ const MainPanelScreen = () => {
             >
               <Text style={styles.statusText}>{crowdInfo.level}</Text>
             </View>
+            
+            {/* Delete Button */}
+            <TouchableOpacity
+              style={[styles.deleteButton, isDeleting && styles.deletingButton]}
+              onPress={(e) => {
+                e.stopPropagation(); // Prevent navigation when delete is pressed
+                deleteLocation(item._id, item.name);
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Icon name="delete" size={20} color="white" />
+              )}
+            </TouchableOpacity>
+
             <Icon
               name="chevron-right"
               size={24}
@@ -487,6 +550,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  deletingCard: {
+    opacity: 0.6,
+    backgroundColor: "#f0f0f0",
+  },
   locationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -513,6 +580,18 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: "#F44336",
+    borderRadius: 15,
+    padding: 6,
+    marginRight: 8,
+    minWidth: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deletingButton: {
+    backgroundColor: "#999",
   },
   chevronIcon: {
     marginLeft: 5,
