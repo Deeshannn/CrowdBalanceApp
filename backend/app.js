@@ -5,28 +5,54 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const userRouter = require("./routes/UserRoutes");
+const missingReportRouter = require("./routes/MissingReportRoutes");
+const locationRoutes = require("./routes/LocationRoutes");
+const notificationRouter = require("./routes/NotificationRoutes");
 const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 // Middleware
-app.use(express.json()); // Without this req.body would be undefined
+app.use(express.json({ limit: "50mb" })); // Increased limit for base64 images
+app.use(express.urlencoded({ extended: true, limit: "50mb" })); // For form data
 app.use(cors());
 
 // Routes
 app.use("/users", userRouter);
+app.use("/missing-reports", missingReportRouter);
+app.use("/locations", locationRoutes);
+app.use("/notifications", notificationRouter);
+
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({
+    message: "Server is running!",
+    endpoints: {
+      users: "/users",
+      missingReports: "/missing-reports",
+      locations: "/locations",
+    },
+  });
+});
 
 // Connect to mongodb database
-mongoose.connect("mongodb+srv://adminUser:5NW3N2LlFEBnLE4G@cluster0.llcjvmk.mongodb.net/crowd-balance-db")
-.then(() => {
+mongoose
+  .connect(
+    "mongodb+srv://adminUser:5NW3N2LlFEBnLE4G@cluster0.llcjvmk.mongodb.net/crowd-balance-db"
+  )
+  .then(() => {
     console.log("Connected to MongoDB!");
     return app.listen(PORT);
-})
-.then(() => {
+  })
+  .then(() => {
     // Start the server only after the database connected
     console.log(`Server running on port: ${PORT}`);
-})
-.catch((err) => {
+
+    require("./cronJobs/cleanupJob");
+    console.log("Going to cornJobs");
+
+  })
+  .catch((err) => {
     console.log(err);
-});
+  });

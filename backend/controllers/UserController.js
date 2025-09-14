@@ -59,7 +59,7 @@ const addOrganizer = async (req, res, next) => {
   if (!email || !password || !name || !phone) {
     return res
       .status(400)
-      .json({ message: "Email, password, name, and phone are required" });
+      .json({ message: "Email, password, name, and phone are requiredd" });
   }
 
   try {
@@ -99,6 +99,8 @@ const addOrganizer = async (req, res, next) => {
 // Add a new main panel - FIXED FIELDS
 const addMainPanel = async (req, res, next) => {
   const { email, password, name, role } = req.body;
+
+  console.log(req.body);
 
   // Validation
   if (!email || !password || !name || !role) {
@@ -161,6 +163,7 @@ const getByID = async (req, res, next) => {
 
 // Update organizer - FIXED FIELDS
 const updateOrganizer = async (req, res, next) => {
+  console.log("Comming to update organizer controller...");
   const id = req.params.id;
   const { email, password, name, phone, assignedHall, status } = req.body;
 

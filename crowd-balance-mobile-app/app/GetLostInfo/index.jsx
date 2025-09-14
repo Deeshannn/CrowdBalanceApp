@@ -13,6 +13,9 @@ import {
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import { API_BASE_URL } from "../../config";
 
 const GetLostInfo = () => {
   const router = useRouter();
@@ -24,6 +27,7 @@ const GetLostInfo = () => {
     description: '',
   });
   const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -46,7 +50,8 @@ const GetLostInfo = () => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8, // Reduced quality for smaller file size
+      base64: true, // Get base64 string
     });
 
     if (!result.canceled) {
@@ -67,7 +72,8 @@ const GetLostInfo = () => {
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8, // Reduced quality for smaller file size
+      base64: true, // Get base64 string
     });
 
     if (!result.canceled) {
@@ -87,28 +93,105 @@ const GetLostInfo = () => {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate required fields
     if (!formData.name.trim() || !formData.age.trim() || !formData.gender) {
       Alert.alert("Error", "Please fill in all required fields (Name, Age, Gender)");
       return;
     }
 
-    // Show success alert
-    Alert.alert(
-      "Alert Sent",
-      "A high-priority alert has been sent to all organizers and panel members.",
-      [
-        {
-          text: "OK",
-          onPress: () => router.back() // Go back to dashboard
-        }
-      ]
-    );
+    if (!photo) {
+      Alert.alert("Error", "Please add a photo of the missing person");
+      return;
+    }
 
-    // Here you would typically send the data to your backend
-    console.log("Form Data:", formData);
-    console.log("Photo:", photo);
+    if (!formData.location.trim()) {
+      Alert.alert("Error", "Please provide the last seen location");
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      Alert.alert("Error", "Please provide a description");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Get user ID from AsyncStorage
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) {
+        Alert.alert("Error", "User not authenticated. Please login again.");
+        router.replace("/auth/login");
+        return;
+      }
+
+      // Prepare the data
+      const reportData = {
+        name: formData.name.trim(),
+        age: parseInt(formData.age),
+        gender: formData.gender,
+        image: `data:image/jpeg;base64,${photo.base64}`, // Convert to base64 data URL
+        lastseenlocation: formData.location.trim(),
+        description: [formData.description.trim()], // Convert to array as expected by backend
+        UserId: userId
+      };
+
+      console.log("Sending report data..");
+
+      // Send to backend
+      const response = await fetch(`${API_BASE_URL}/missing-reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportData),
+        timeout: 15000, // 15 second timeout
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("Report created successfully:", result.report);
+        
+        // Show success alert
+        Alert.alert(
+          "Alert Sent Successfully! ✅",
+          "A high-priority alert has been sent to all organizers and panel members. The missing person report has been saved to the database.",
+          [
+            {
+              text: "View Dashboard",
+              onPress: () => router.push("/dashboard") // Go to dashboard
+            },
+            {
+              text: "Report Another",
+              onPress: () => {
+                // Reset form
+                setFormData({
+                  name: '',
+                  age: '',
+                  gender: '',
+                  location: '',
+                  description: '',
+                });
+                setPhoto(null);
+              }
+            }
+          ]
+        );
+      } else {
+        console.error("Server error:", result.message);
+        Alert.alert("Error", result.message || "Failed to send alert. Please try again.");
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      Alert.alert(
+        "Network Error", 
+        "Unable to send alert. Please check your internet connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -157,15 +240,14 @@ const GetLostInfo = () => {
               style={styles.picker}
             >
               <Picker.Item label="Select gender" value="" />
-              <Picker.Item label="Male" value="male" />
-              <Picker.Item label="Female" value="female" />
-              <Picker.Item label="Other" value="other" />
+              <Picker.Item label="Male" value="Male" />
+              <Picker.Item label="Female" value="Female" />
             </Picker>
           </View>
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Photo</Text>
+          <Text style={styles.label}>Photo *</Text>
           <View style={styles.photoContainer}>
             <TouchableOpacity style={styles.photoPreview} onPress={showImageOptions}>
               {photo ? (
@@ -181,7 +263,7 @@ const GetLostInfo = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Last Seen Location</Text>
+          <Text style={styles.label}>Last Seen Location *</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g., Near Lecture Hall 5"
@@ -191,7 +273,7 @@ const GetLostInfo = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>Description *</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="e.g., Wearing a blue t-shirt, red shorts, and a white cap."
@@ -203,8 +285,14 @@ const GetLostInfo = () => {
           />
         </View>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>🚨 Send High-Priority Alert</Text>
+        <TouchableOpacity 
+          style={[styles.submitButton, loading && styles.disabledButton]} 
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          <Text style={styles.submitButtonText}>
+            {loading ? "Sending Alert..." : "🚨 Send Alert"}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -316,6 +404,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
+  },
+  disabledButton: {
+    backgroundColor: "#9ca3af",
   },
   submitButtonText: {
     color: 'white',
