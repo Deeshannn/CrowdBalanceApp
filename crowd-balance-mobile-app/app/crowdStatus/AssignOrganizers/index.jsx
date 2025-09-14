@@ -416,6 +416,8 @@ const AssignOrganizers = () => {
   */
   }
 
+  // Update the confirmAssignment function in AssignOrganizers.js
+
   const confirmAssignment = async () => {
     if (!selectedOrganizer || !locationId) return;
 
@@ -436,7 +438,7 @@ const AssignOrganizers = () => {
           },
           body: JSON.stringify({
             assignedHall: locationName,
-            // status: "Busy", // Also update status to Busy
+            // status: "Busy", // Keep commented as requested
           }),
         }
       );
@@ -458,27 +460,61 @@ const AssignOrganizers = () => {
       console.log("Assignment result:", result);
 
       if (result.organizer) {
-        // Send SMS notification to the organizer
-        {
-          /* try {
-          const { result } = await SMS.sendSMSAsync(
-            [selectedOrganizer.phone],
-            `You have been assigned to ${locationName}. Current crowd level: ${crowdLevel}. Please proceed immediately.`
+        // Send in-app notification instead of SMS
+        try {
+          const notificationResponse = await fetch(
+            `${API_BASE_URL}/notifications`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userId: selectedOrganizer._id,
+                title: "New Location Assignment",
+                content: `You have been assigned to ${locationName}. Current crowd level: ${crowdLevel}. Please proceed immediately.`,
+                type: "assignment",
+              }),
+            }
           );
 
-          if (result === "sent") {
-            console.log("SMS sent successfully");
+          const notificationResult = await notificationResponse.json();
+
+          if (notificationResult.success) {
+            console.log("In-app notification sent successfully");
           } else {
-            console.log("SMS could not be sent:", result);
+            console.warn(
+              "Failed to send in-app notification:",
+              notificationResult.message
+            );
           }
-        } catch (smsError) {
-          console.warn("SMS sending failed:", smsError);
+        } catch (notificationError) {
+          console.warn(
+            "In-app notification sending failed:",
+            notificationError
+          );
         }
-    */
+
+        /* Keep SMS code commented as requested
+      try {
+        const { result } = await SMS.sendSMSAsync(
+          [selectedOrganizer.phone],
+          `You have been assigned to ${locationName}. Current crowd level: ${crowdLevel}. Please proceed immediately.`
+        );
+
+        if (result === "sent") {
+          console.log("SMS sent successfully");
+        } else {
+          console.log("SMS could not be sent:", result);
         }
+      } catch (smsError) {
+        console.warn("SMS sending failed:", smsError);
+      }
+      */
+
         Alert.alert(
           "Success",
-          `${selectedOrganizer.name} has been assigned to ${locationName} and notified via SMS.`,
+          `${selectedOrganizer.name} has been assigned to ${locationName} and notified through the app.`,
           [
             {
               text: "OK",
@@ -1314,7 +1350,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "600",
-  }
+  },
 });
 
 export default AssignOrganizers;

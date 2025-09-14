@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const userRouter = require("./routes/UserRoutes");
 const missingReportRouter = require("./routes/MissingReportRoutes");
 const locationRoutes = require("./routes/LocationRoutes");
+const notificationRouter = require("./routes/NotificationRoutes");
 const cors = require("cors");
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(cors());
 app.use("/users", userRouter);
 app.use("/missing-reports", missingReportRouter);
 app.use("/locations", locationRoutes);
+app.use("/notifications", notificationRouter);
 
 // Health check endpoint
 app.get("/", (req, res) => {

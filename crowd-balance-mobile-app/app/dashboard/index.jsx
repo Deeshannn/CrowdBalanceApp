@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -27,89 +27,195 @@ const Dashboard = () => {
   const [reportsLoading, setReportsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
+  // Notification states
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  
   // Image zoom modal states
   const [selectedImageUri, setSelectedImageUri] = useState(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const userId = await AsyncStorage.getItem("userId");
-        const isLoggedIn = await AsyncStorage.getItem("isLoggedIn");
-        
-        if (!userId || isLoggedIn !== "true") {
-          console.log("No valid session found, redirecting to login");
-          router.replace("/auth/login");
-          return;
-        }
+  // Auto-refresh interval for notifications
+  const notificationIntervalRef = useRef(null);
+  const isMountedRef = useRef(true);
 
-        // First try to get user data from AsyncStorage (stored during login)
-        const storedUserData = await AsyncStorage.getItem("userData");
-        if (storedUserData) {
-          console.log("Loading user data from AsyncStorage");
-          const userData = JSON.parse(storedUserData);
+  // Safe async function wrapper to prevent Metro bundler issues
+  const safeAsync = useCallback((asyncFn) => {
+    return async (...args) => {
+      try {
+        if (!isMountedRef.current) return;
+        return await asyncFn(...args);
+      } catch (error) {
+        if (!isMountedRef.current) return;
+        console.error('Safe async error:', error);
+        throw error;
+      }
+    };
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (notificationIntervalRef.current) {
+        clearInterval(notificationIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const fetchUser = useCallback(safeAsync(async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      const isLoggedIn = await AsyncStorage.getItem("isLoggedIn");
+      
+      if (!userId || isLoggedIn !== "true") {
+        console.log("No valid session found, redirecting to login");
+        router.replace("/auth/login");
+        return;
+      }
+
+      // First try to get user data from AsyncStorage
+      const storedUserData = await AsyncStorage.getItem("userData");
+      if (storedUserData) {
+        console.log("Loading user data from AsyncStorage");
+        const userData = JSON.parse(storedUserData);
+        if (isMountedRef.current) {
           setUser(userData);
           setLoading(false);
-          // Fetch all missing reports (not user-specific)
           fetchMissingReports();
-          return;
+          if (userData.userType === "Organizer") {
+            fetchNotifications(userData.id || userId);
+          }
         }
+        return;
+      }
 
-        // Fallback: Fetch from server if not in AsyncStorage
-        console.log("Fetching user data from server");
-        const res = await axios.get(`${API_BASE_URL}/users/${userId}`, {
-          timeout: 10000, // 10 second timeout
-        });
-        
-        if (res.data && res.data.user) {
-          setUser(res.data.user);
-          // Store for future use
-          await AsyncStorage.setItem("userData", JSON.stringify(res.data.user));
-          // Fetch all missing reports (not user-specific)
-          fetchMissingReports();
-        } else {
-          throw new Error("Invalid response from server");
+      // Fallback: Fetch from server
+      console.log("Fetching user data from server");
+      const response = await axios.get(`${API_BASE_URL}/users/${userId}`, {
+        timeout: 10000,
+      });
+      
+      if (response.data && response.data.user && isMountedRef.current) {
+        setUser(response.data.user);
+        await AsyncStorage.setItem("userData", JSON.stringify(response.data.user));
+        fetchMissingReports();
+        if (response.data.user.userType === "Organizer") {
+          fetchNotifications(response.data.user.id || userId);
         }
-      } catch (err) {
-        console.error("Error fetching user:", err);
-        
-        // If we have basic user info from AsyncStorage, use that as fallback
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      
+      if (!isMountedRef.current) return;
+      
+      // Fallback to AsyncStorage data
+      try {
         const userName = await AsyncStorage.getItem("userName");
         const userType = await AsyncStorage.getItem("userType");
         const userId = await AsyncStorage.getItem("userId");
         
         if (userName && userType) {
           console.log("Using fallback user data from AsyncStorage");
-          setUser({
-            name: userName,
-            userType: userType,
-            id: userId
-          });
-          // Fetch all missing reports
+          const userData = { name: userName, userType: userType, id: userId };
+          setUser(userData);
           fetchMissingReports();
+          if (userType === "Organizer") {
+            fetchNotifications(userId);
+          }
         } else {
-          // Clear invalid session and redirect to login
           await AsyncStorage.clear();
           router.replace("/auth/login");
         }
-      } finally {
+      } catch (fallbackError) {
+        console.error("Fallback error:", fallbackError);
+        await AsyncStorage.clear();
+        router.replace("/auth/login");
+      }
+    } finally {
+      if (isMountedRef.current) {
         setLoading(false);
       }
-    };
+    }
+  }), [safeAsync]);
 
-    fetchUser();
-  }, []);
+  const fetchNotifications = useCallback(safeAsync(async (userId, showLoading = true) => {
+    if (!userId) {
+      console.log("No userId provided for notifications");
+      return;
+    }
 
-  const fetchMissingReports = async () => {
-    setReportsLoading(true);
+    if (showLoading && isMountedRef.current) {
+      setNotificationsLoading(true);
+    }
+    
     try {
-      // Fetch ALL missing reports (not user-specific)
+      const response = await axios.get(`${API_BASE_URL}/notifications/user/${userId}`, {
+        timeout: 10000,
+      });
+      
+      if (response.data && response.data.success && isMountedRef.current) {
+        setNotifications(response.data.notifications || []);
+        console.log("Fetched notifications:", (response.data.notifications || []).length);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      
+      // Handle specific error cases
+      if (error.response && error.response.status === 404) {
+        console.log("Notifications endpoint not found - this might be expected if notifications feature is not implemented yet");
+        if (isMountedRef.current) {
+          setNotifications([]);
+        }
+      } else if (error.code === 'ECONNABORTED') {
+        console.log("Notifications fetch timed out");
+      }
+      // Don't show alerts for auto-refresh errors
+    } finally {
+      if (showLoading && isMountedRef.current) {
+        setNotificationsLoading(false);
+      }
+    }
+  }), [safeAsync]);
+
+  const handleDismissNotification = useCallback(safeAsync(async (notificationId) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/notifications/${notificationId}`, {
+        timeout: 10000,
+      });
+
+      if (response.data && response.data.success && isMountedRef.current) {
+        setNotifications(prev => 
+          prev.filter(notification => notification._id !== notificationId)
+        );
+        console.log("Notification dismissed successfully");
+      }
+    } catch (error) {
+      console.error("Error dismissing notification:", error);
+      if (isMountedRef.current) {
+        Alert.alert(
+          "Error", 
+          "Failed to dismiss notification. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    }
+  }), [safeAsync]);
+
+  const fetchMissingReports = useCallback(safeAsync(async () => {
+    if (isMountedRef.current) {
+      setReportsLoading(true);
+    }
+    
+    try {
       const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
         timeout: 10000,
       });
       
-      if (response.data && response.data.reports) {
+      if (response.data && response.data.reports && isMountedRef.current) {
         setMissingReports(response.data.reports);
         console.log("Fetched all missing reports:", response.data.reports.length);
       }
@@ -117,11 +223,13 @@ const Dashboard = () => {
       console.error("Error fetching missing reports:", error);
       // Don't show alert for network errors, just log them
     } finally {
-      setReportsLoading(false);
+      if (isMountedRef.current) {
+        setReportsLoading(false);
+      }
     }
-  };
+  }), [safeAsync]);
 
-  const handleMarkAsFound = async (reportId, personName) => {
+  const handleMarkAsFound = useCallback((reportId, personName) => {
     Alert.alert(
       "Mark as Found",
       `Are you sure you want to mark ${personName} as found? This will permanently delete the report from the database.`,
@@ -134,17 +242,16 @@ const Dashboard = () => {
         }
       ]
     );
-  };
+  }, []);
 
-  const deleteReport = async (reportId, personName) => {
+  const deleteReport = useCallback(safeAsync(async (reportId, personName) => {
     try {
       const response = await axios.delete(
         `${API_BASE_URL}/missing-reports/${reportId}`,
         { timeout: 10000 }
       );
 
-      if (response.status === 200) {
-        // Remove the report from local state
+      if (response.status === 200 && isMountedRef.current) {
         setMissingReports(prev => 
           prev.filter(report => report._id !== reportId)
         );
@@ -158,48 +265,62 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error deleting report:", error);
       
+      if (!isMountedRef.current) return;
+      
       let errorMessage = "Failed to delete the report. Please try again.";
       if (error.response) {
-        // Server responded with an error status
         errorMessage = error.response.data?.message || errorMessage;
       } else if (error.request) {
-        // Request was made but no response received
         errorMessage = "Network error. Please check your connection.";
       }
       
-      Alert.alert(
-        "Error", 
-        errorMessage,
-        [{ text: "OK" }]
-      );
+      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
     }
-  };
+  }), [safeAsync]);
 
   // Image zoom functions
-  const openImageModal = (imageUri) => {
+  const openImageModal = useCallback((imageUri) => {
     setSelectedImageUri(imageUri);
     setImageModalVisible(true);
     setImageLoading(true);
-  };
+  }, []);
 
-  const closeImageModal = () => {
+  const closeImageModal = useCallback(() => {
     setImageModalVisible(false);
     setSelectedImageUri(null);
     setImageLoading(false);
-  };
+  }, []);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(safeAsync(async () => {
     setRefreshing(true);
-    await fetchMissingReports();
-    setRefreshing(false);
-  };
+    
+    try {
+      await fetchMissingReports();
+      
+      if (user && user.userType === "Organizer") {
+        const userId = user.id || user._id;
+        await fetchNotifications(userId, false);
+      }
+    } catch (error) {
+      console.error("Error during refresh:", error);
+    } finally {
+      if (isMountedRef.current) {
+        setRefreshing(false);
+      }
+    }
+  }), [safeAsync, fetchMissingReports, fetchNotifications, user]);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  };
+  const formatDate = useCallback((dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid Date";
+    }
+  }, []);
 
-  const getStatusStyle = (status) => {
+  const getStatusStyle = useCallback((status) => {
     switch(status) {
       case 'Active':
         return { backgroundColor: '#ef4444', color: 'white' };
@@ -210,9 +331,9 @@ const Dashboard = () => {
       default:
         return { backgroundColor: '#ef4444', color: 'white' };
     }
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(() => {
     Alert.alert(
       "Confirm Logout",
       "Are you sure you want to logout?",
@@ -222,13 +343,143 @@ const Dashboard = () => {
           text: "Logout", 
           style: "destructive",
           onPress: async () => {
-            await AsyncStorage.clear();
-            router.replace("/auth/LoginScreen");
+            try {
+              await AsyncStorage.clear();
+              router.replace("/auth/LoginScreen");
+            } catch (error) {
+              console.error("Error during logout:", error);
+              router.replace("/auth/LoginScreen");
+            }
           }
         }
       ]
     );
-  };
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  // Setup auto-refresh for notifications
+  useEffect(() => {
+    if (user && user.userType === "Organizer") {
+      const userId = user.id || user._id;
+      
+      if (userId) {
+        // Set up auto-refresh
+        notificationIntervalRef.current = setInterval(() => {
+          if (isMountedRef.current) {
+            fetchNotifications(userId, false);
+          }
+        }, 30000); // Every 30 seconds
+      }
+    }
+
+    return () => {
+      if (notificationIntervalRef.current) {
+        clearInterval(notificationIntervalRef.current);
+      }
+    };
+  }, [user, fetchNotifications]);
+
+  // Notification Banner Component
+  const NotificationBanner = useCallback(({ notification, onDismiss }) => {
+    const getNotificationColors = (type) => {
+      switch (type) {
+        case 'assignment':
+          return { backgroundColor: '#3b82f6', borderColor: '#1d4ed8' };
+        case 'urgent':
+          return { backgroundColor: '#ef4444', borderColor: '#dc2626' };
+        default:
+          return { backgroundColor: '#10b981', borderColor: '#059669' };
+      }
+    };
+
+    const getNotificationIcon = (type) => {
+      switch (type) {
+        case 'assignment':
+          return '📍';
+        case 'urgent':
+          return '🚨';
+        default:
+          return '📢';
+      }
+    };
+
+    const colors = getNotificationColors(notification.type);
+    const icon = getNotificationIcon(notification.type);
+
+    const getTimeRemaining = () => {
+      try {
+        const now = new Date();
+        const expiresAt = new Date(notification.expiresAt);
+        const diffMs = expiresAt - now;
+        
+        if (diffMs <= 0) return 'Expired';
+        
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+        
+        if (diffMins > 0) {
+          return `${diffMins}m ${diffSecs}s remaining`;
+        } else {
+          return `${diffSecs}s remaining`;
+        }
+      } catch (error) {
+        console.error("Error calculating time remaining:", error);
+        return 'Time unavailable';
+      }
+    };
+
+    return (
+      <View style={[styles.notificationContainer, { backgroundColor: colors.backgroundColor, borderColor: colors.borderColor }]}>
+        <View style={styles.notificationHeader}>
+          <View style={styles.notificationTitleRow}>
+            <Text style={styles.notificationIcon}>{icon}</Text>
+            <Text style={styles.notificationTitle}>{notification.title}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.dismissButton}
+            onPress={() => onDismiss(notification._id)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.dismissText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.notificationContent}>{notification.content}</Text>
+        
+        <View style={styles.notificationFooter}>
+          <Text style={styles.timeText}>{getTimeRemaining()}</Text>
+          <TouchableOpacity
+            style={styles.okButton}
+            onPress={() => onDismiss(notification._id)}
+          >
+            <Text style={styles.okButtonText}>Okay</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }, []);
+
+  const handleReportMissing = useCallback(() => {
+    router.push('/GetLostInfo');
+  }, []);
+
+  const handleCrowdStatusNavigation = useCallback(() => {
+    if (user?.userType === "Organizer") {
+      router.push("/crowdStatus/OrganizerCrowdStatus");
+    } else if (user?.userType === "Panel") {
+      router.push("/crowdStatus/MainPanelCrowdStatus");
+    } else {
+      Alert.alert(
+        "Access Denied",
+        "Your user type does not have access to crowd status features.",
+        [{ text: "OK" }]
+      );
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -250,26 +501,6 @@ const Dashboard = () => {
     );
   }
 
-  const handleReportMissing = () => {
-    router.push('/GetLostInfo');
-  };
-
-  // Function to handle crowd status navigation based on user type
-  const handleCrowdStatusNavigation = () => {
-    if (user?.userType === "Organizer") {
-      router.push("/crowdStatus/OrganizerCrowdStatus");
-    } else if (user?.userType === "Panel") {
-      router.push("/crowdStatus/MainPanelCrowdStatus");
-    } else {
-      // For other user types, you can either show an alert or navigate to a default screen
-      Alert.alert(
-        "Access Denied",
-        "Your user type does not have access to crowd status features.",
-        [{ text: "OK" }]
-      );
-    }
-  };
-
   return (
     <>
       <ScrollView 
@@ -286,6 +517,32 @@ const Dashboard = () => {
           )}
         </View>
 
+        {/* Notifications Section - Only for Organizers */}
+        {user.userType === "Organizer" && (
+          <View style={styles.notificationsSection}>
+            {notificationsLoading ? (
+              <View style={styles.notificationsLoading}>
+                <ActivityIndicator size="small" color="#1e40af" />
+                <Text style={styles.loadingText}>Loading notifications...</Text>
+              </View>
+            ) : notifications.length > 0 ? (
+              <>
+                <Text style={styles.notificationsSectionTitle}>
+                  Notifications ({notifications.length})
+                </Text>
+                {notifications.map((notification) => (
+                  <NotificationBanner
+                    key={notification._id}
+                    notification={notification}
+                    onDismiss={handleDismissNotification}
+                  />
+                ))}
+              </>
+            ) : 
+            <Text>Nothing</Text>}
+          </View>
+        )}
+
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={styles.emergencyButton}
@@ -297,7 +554,7 @@ const Dashboard = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Missing Reports Section - Now shows ALL reports */}
+        {/* Missing Reports Section */}
         <View style={styles.reportsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>All Missing Person Reports</Text>
@@ -342,7 +599,6 @@ const Dashboard = () => {
                       <Text style={styles.reportDate}>
                         Reported: {formatDate(report.createdAt)}
                       </Text>
-                      {/* Show who reported it */}
                       {report.UserId && (
                         <Text style={styles.reportedBy}>
                           Reported by: {report.UserId.name || 'Unknown'}
@@ -363,7 +619,6 @@ const Dashboard = () => {
                     </View>
                   )}
 
-                  {/* FOUND Button - Only show if status is not already 'Found' */}
                   {report.status !== 'Found' && (
                     <View style={styles.actionButtonContainer}>
                       <TouchableOpacity
@@ -415,7 +670,6 @@ const Dashboard = () => {
         <View style={styles.modalOverlay}>
           <StatusBar hidden={true} />
           
-          {/* Close Button */}
           <TouchableOpacity
             style={styles.closeButton}
             onPress={closeImageModal}
@@ -424,7 +678,6 @@ const Dashboard = () => {
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
 
-          {/* Loading indicator */}
           {imageLoading && (
             <View style={styles.imageLoadingContainer}>
               <ActivityIndicator size="large" color="#ffffff" />
@@ -432,7 +685,6 @@ const Dashboard = () => {
             </View>
           )}
 
-          {/* Fullscreen Image */}
           {selectedImageUri && (
             <TouchableOpacity
               style={styles.imageModalContainer}
@@ -509,6 +761,98 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1e40af",
     fontWeight: "600",
+  },
+  notificationsSection: {
+    marginBottom: 20,
+  },
+  notificationsSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  notificationsLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  notificationContainer: {
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginVertical: 8,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  notificationTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  notificationIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  notificationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    flex: 1,
+  },
+  dismissButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  dismissText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  notificationContent: {
+    fontSize: 16,
+    color: '#ffffff',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  notificationFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  timeText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontStyle: 'italic',
+  },
+  okButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  okButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   actionContainer: {
     paddingHorizontal: 20,
