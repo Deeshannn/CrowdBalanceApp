@@ -24,7 +24,7 @@ app.use("/missing-reports", missingReportRouter);
 app.use("/locations", locationRoutes);
 app.use("/notifications", notificationRouter);
 
-// Health check endpoint
+// Health check endpoint 
 app.get("/", (req, res) => {
   res.json({
     message: "Server is running!",
