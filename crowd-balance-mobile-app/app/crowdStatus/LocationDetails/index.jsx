@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   headerContainer: {
-    marginTop: 20,
+    marginTop: 0,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#007AFF",

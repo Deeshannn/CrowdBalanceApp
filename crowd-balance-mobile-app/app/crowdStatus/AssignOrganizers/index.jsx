@@ -977,6 +977,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   centerContainer: {
+    marginTop: 60,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
