@@ -17,3 +17,7 @@ SMS services
 npm install react-native-sms // not work for Expo
 
 npx expo install expo-sms
+
+
+
+Note: To delete actovity log more than 1 hour data, a user must send current level update to the backend (not auto updating)
