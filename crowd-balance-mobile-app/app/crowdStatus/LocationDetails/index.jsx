@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Modal,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,6 +21,9 @@ const LocationDetail = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [organizers, setOrganizers] = useState([]);
+
+  const [clearingActivities, setClearingActivities] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const fetchLocationDetails = useCallback(async (locationId) => {
     if (!locationId) return;
@@ -127,6 +132,97 @@ const LocationDetail = () => {
     }
   };
 
+  const handleClearActivities = async () => {
+    if (activities.length === 0) {
+      Alert.alert("No Activities", "There are no activity reports to clear.");
+      return;
+    }
+    console.log("..................1");
+
+    setClearingActivities(true);
+    setShowClearModal(false);
+    console.log("..................2");
+    try {
+      // In your frontend, before making the request
+      console.log("Clearing activities for locationId:", location._id);
+      const response = await fetch(
+        `${API_BASE_URL}/locations/${location._id}/activities`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("..................3");
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries([...response.headers])
+      );
+
+      const result = await response.json();
+
+      console.log("..................4");
+      console.log("result.success: " + result.success);
+
+      if (result.success) {
+        Alert.alert("Success", result.message);
+        // Refresh the data
+        fetchLocationDetails(location._id);
+      } else {
+        Alert.alert("Error", result.message || "Failed to clear activities");
+      }
+    } catch (error) {
+      console.log("❌ Error clearing activities:", error);
+      Alert.alert("Error", "Network error occurred while clearing activities");
+    } finally {
+      setClearingActivities(false);
+    }
+  };
+
+  const renderClearModal = () => (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={showClearModal}
+      onRequestClose={() => setShowClearModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Icon name="warning" size={32} color="#F44336" />
+            <Text style={styles.modalTitle}>Clear Activity Feed</Text>
+          </View>
+
+          <Text style={styles.modalMessage}>
+            Are you sure you want to clear all {activities.length} activity
+            reports for {location?.name}?
+          </Text>
+
+          <Text style={styles.modalWarning}>This action cannot be undone.</Text>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShowClearModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton]}
+              onPress={handleClearActivities}
+            >
+              <Text style={styles.confirmButtonText}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   if (!location) {
     return (
       <View style={styles.errorContainer}>
@@ -218,9 +314,7 @@ const LocationDetail = () => {
     if (total === 0) {
       return (
         <View style={styles.chartContainer}>
-          <Text style={styles.noDataText}>
-            No crowd data available
-          </Text>
+          <Text style={styles.noDataText}>No crowd data available</Text>
         </View>
       );
     }
@@ -334,11 +428,9 @@ const LocationDetail = () => {
               <Text style={styles.organizerName}>
                 {organizer.name || `Organizer ${index + 1}`}
               </Text>
+              <Text style={styles.organizerInfo}>Email: {organizer.email}</Text>
               <Text style={styles.organizerInfo}>
-                Email: {organizer.email}
-              </Text>
-              <Text style={styles.organizerInfo}>
-                Phone: {organizer.phone || 'N/A'}
+                Phone: {organizer.phone || "N/A"}
               </Text>
             </View>
           </View>
@@ -419,6 +511,22 @@ const LocationDetail = () => {
           <View style={styles.activityHeader}>
             <Icon name="update" size={20} color="#007AFF" />
             <Text style={styles.cardTitle}>Activity Feed</Text>
+            {activities.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => setShowClearModal(true)}
+                disabled={clearingActivities}
+              >
+                {clearingActivities ? (
+                  <ActivityIndicator size="small" color="#F44336" />
+                ) : (
+                  <Icon name="clear-all" size={18} color="#F44336" />
+                )}
+                <Text style={styles.clearButtonText}>
+                  {clearingActivities ? "Clearing..." : "Clear Feed"}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
           {renderActivityFeed()}
         </View>
@@ -529,6 +637,8 @@ const LocationDetail = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {/* Add this modal before closing </View> */}
+      {renderClearModal()}
     </View>
   );
 };
@@ -648,6 +758,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 15,
+    justifyContent: "space-between",
   },
   activityList: {
     marginTop: 10,
@@ -942,6 +1053,95 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     paddingHorizontal: 20,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    padding: 25,
+    margin: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 10,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 10,
+    lineHeight: 22,
+  },
+  modalWarning: {
+    fontSize: 14,
+    color: "#F44336",
+    textAlign: "center",
+    marginBottom: 25,
+    fontWeight: "500",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 15,
+  },
+  modalButton: {
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#f5f5f5",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  confirmButton: {
+    backgroundColor: "#F44336",
+  },
+  cancelButtonText: {
+    color: "#666",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  confirmButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  // Clear Button Styles (update existing activityHeader)
+  clearButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "#FFEBEE",
+    borderWidth: 1,
+    borderColor: "#FFCDD2",
+  },
+  clearButtonText: {
+    fontSize: 12,
+    color: "#F44336",
+    fontWeight: "600",
+    marginLeft: 4,
   },
 });
 

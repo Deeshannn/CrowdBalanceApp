@@ -146,6 +146,8 @@ const getLocationById = async (req, res) => {
 
 // Add new location (Main Panel only) - UPDATED: Removed score initialization
 const addLocation = async (req, res) => {
+
+  console.log("add location controller...");
   try {
     const { name, capacity } = req.body;
 
@@ -353,6 +355,57 @@ const updateLocation = async (req, res) => {
   }
 };
 
+// Clear all activities for a location
+const clearLocationActivities = async (req, res) => {
+
+  try {
+    const { locationId } = req.params;
+
+    const location = await Location.findById(locationId);
+    if (!location) {
+      return res.status(404).json({
+        success: false,
+        message: "Location not found",
+      });
+    }
+
+    const activitiesCount = location.activityLog.length;
+    
+    if (activitiesCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No activities to clear",
+      });
+    }
+
+    // Clear the activity log
+    location.activityLog = [];
+    location.lastUpdated = new Date();
+
+    await location.save();
+
+    console.log(`Cleared ${activitiesCount} activities from location ${location.name}`);
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully cleared ${activitiesCount} activity reports from ${location.name}`,
+      data: {
+        locationId: location._id,
+        locationName: location.name,
+        clearedActivities: activitiesCount,
+        lastUpdated: location.lastUpdated,
+      },
+    });
+  } catch (error) {
+    console.error("Error clearing activitiesss:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error clearing activities",
+      error: error.message,
+    });
+  }
+};
+
 // Delete location (Main Panel only)
 const deleteLocation = async (req, res) => {
   console.log("Coming to deleting Locations...");
@@ -394,5 +447,6 @@ module.exports = {
   updateLocation,
   deleteLocation,
   getLocationActivities,
-  getLocationByIdOrganizers
+  getLocationByIdOrganizers,
+  clearLocationActivities
 };

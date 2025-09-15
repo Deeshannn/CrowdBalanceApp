@@ -5,25 +5,28 @@ const locationController = require('../controllers/LocationController');
 // Get all locations
 router.get('/', locationController.getAllLocations);
 
-// Add new location (Main Panel only) - PUT THIS BEFORE /:id routes
+// Add new location (Main Panel only)
 router.post('/', locationController.addLocation);
 
-// Update crowd score (Organizers only) - PUT THIS BEFORE /:id routes
+// Update crowd score (Organizers only) - BEFORE /:locationId routes
 router.patch('/:locationId/crowd', locationController.updateCrowdScore);
 
-// NEW ROUTE: Get recent activities for a location
+// Get recent activities for a location - BEFORE /:locationId routes
 router.get('/:locationId/activities', locationController.getLocationActivities);
 
-// Get single location by ID
-router.get('/:locationId', locationController.getLocationById);
+// Clear all activities for a location - BEFORE /:locationId routes
+router.delete('/:locationId/activities', locationController.clearLocationActivities);
 
-// Update location details (Main Panel only)
-router.put('/:locationId', locationController.updateLocation);
-
-
+// Get organizers for a location - BEFORE /:locationId routes
 router.get("/:locationId/organizers", locationController.getLocationByIdOrganizers);
 
-// Delete location (Main Panel only)
+// Get single location by ID - AFTER all specific sub-routes
+router.get('/:locationId', locationController.getLocationById);
+
+// Update location details (Main Panel only) - AFTER get route
+router.put('/:locationId', locationController.updateLocation);
+
+// Delete location (Main Panel only) - LAST
 router.delete('/:locationId', locationController.deleteLocation);
 
 module.exports = router;
