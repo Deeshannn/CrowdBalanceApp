@@ -64,6 +64,19 @@ const Dashboard = () => {
     };
   }, []);
 
+  // Add this to your useEffect hooks
+useEffect(() => {
+  const reportsPollingInterval = setInterval(() => {
+    if (isMountedRef.current) {
+      fetchMissingReports();
+    }
+  }, 60000); // Refresh every 30 seconds
+
+  return () => {
+    clearInterval(reportsPollingInterval);
+  };
+}, [fetchMissingReports]);
+
   const fetchUser = useCallback(
     safeAsync(async () => {
       try {
@@ -230,34 +243,40 @@ const Dashboard = () => {
   );
 
   const fetchMissingReports = useCallback(
-    safeAsync(async () => {
+  safeAsync(async () => {
+    if (isMountedRef.current) {
+      setReportsLoading(true);
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
+        timeout: 10000,
+      });
+
+      if (response.data && response.data.reports && isMountedRef.current) {
+        setMissingReports(response.data.reports);
+        console.log(
+          "Fetched all missing reports:",
+          response.data.reports.length
+        );
+      } else if (isMountedRef.current) {
+        // Handle case where response doesn't contain reports
+        setMissingReports([]);
+      }
+    } catch (error) {
+      console.log("❌ No missing persons: ", error);
+      // Set empty array on error to clear any stale data
       if (isMountedRef.current) {
-        setReportsLoading(true);
+        setMissingReports([]);
       }
-
-      try {
-        const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
-          timeout: 10000,
-        });
-
-        if (response.data && response.data.reports && isMountedRef.current) {
-          setMissingReports(response.data.reports);
-          console.log(
-            "Fetched all missing reports:",
-            response.data.reports.length
-          );
-        }
-      } catch (error) {
-        console.log("❌ No missing persons: ", error);
-        // Don't show alert for network errors, just log them
-      } finally {
-        if (isMountedRef.current) {
-          setReportsLoading(false);
-        }
+    } finally {
+      if (isMountedRef.current) {
+        setReportsLoading(false);
       }
-    }),
-    [safeAsync]
-  );
+    }
+  }),
+  [safeAsync]
+);
 
   const handleMarkAsFound = useCallback((reportId, personName) => {
     Alert.alert(
@@ -325,26 +344,29 @@ const Dashboard = () => {
   }, []);
 
   const onRefresh = useCallback(
-    safeAsync(async () => {
-      setRefreshing(true);
+  safeAsync(async () => {
+    setRefreshing(true);
+    
+    // Clear current data before fetching
+    setMissingReports([]);
 
-      try {
-        await fetchMissingReports();
+    try {
+      await fetchMissingReports();
 
-        if (user && user.userType === "Organizer") {
-          const userId = user.id || user._id;
-          await fetchNotifications(userId, false);
-        }
-      } catch (error) {
-        console.error("Error during refresh:", error);
-      } finally {
-        if (isMountedRef.current) {
-          setRefreshing(false);
-        }
+      if (user && user.userType === "Organizer") {
+        const userId = user.id || user._id;
+        await fetchNotifications(userId, false);
       }
-    }),
-    [safeAsync, fetchMissingReports, fetchNotifications, user]
-  );
+    } catch (error) {
+      console.error("Error during refresh:", error);
+    } finally {
+      if (isMountedRef.current) {
+        setRefreshing(false);
+      }
+    }
+  }),
+  [safeAsync, fetchMissingReports, fetchNotifications, user]
+);
 
   const formatDate = useCallback((dateString) => {
     try {

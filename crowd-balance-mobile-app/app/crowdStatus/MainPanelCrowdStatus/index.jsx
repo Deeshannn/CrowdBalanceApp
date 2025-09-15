@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -23,13 +23,34 @@ const MainPanelScreen = () => {
   const [newLocationName, setNewLocationName] = useState("");
   const [newLocationCapacity, setNewLocationCapacity] = useState("");
   const [deleting, setDeleting] = useState(null); // Track which location is being deleted
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const refreshIntervalRef = useRef(null);
 
   useEffect(() => {
-    fetchLocations();
+    // Initial fetch
+    fetchLocations(false);
+
+    // Set up auto-refresh every 60 seconds
+    refreshIntervalRef.current = setInterval(() => {
+      console.log("Auto-refreshing locations data...");
+      fetchLocations(true);
+    }, 60000); // 60 seconds
+
+    // Clean up interval on component unmount
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
   }, []);
 
-  const fetchLocations = async () => {
+  const fetchLocations = async (isAutoRefresh = false) => {
     try {
+      // Don't show loading indicator for auto-refresh to avoid UI flickering
+      if (!isAutoRefresh) {
+        setLoading(true);
+      }
+
       const response = await fetch(`${API_BASE_URL}/locations`);
       const result = await response.json();
 
@@ -75,11 +96,25 @@ const MainPanelScreen = () => {
         );
 
         setLocations(locationsWithActivities);
+        setLastUpdated(new Date());
+
+        // Log auto-refresh success (optional)
+        if (isAutoRefresh) {
+          console.log("Locations auto-refreshed successfully");
+        }
       } else {
-        Alert.alert("Error", "Failed to fetch locations");
+        // Only show alert for manual refreshes, not auto-refreshes
+        if (!isAutoRefresh) {
+          Alert.alert("Error", "Failed to fetch locations");
+        }
       }
     } catch (error) {
-      Alert.alert("Error", "Network error occurred");
+      // Only show alert for manual refreshes, not auto-refreshes
+      if (!isAutoRefresh) {
+        Alert.alert("Error", "Network error occurred");
+      } else {
+        console.error("Auto-refresh error:", error);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -144,12 +179,15 @@ const MainPanelScreen = () => {
             try {
               setDeleting(locationId); // Show loading state for this location
 
-              const response = await fetch(`${API_BASE_URL}/locations/${locationId}`, {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              });
+              const response = await fetch(
+                `${API_BASE_URL}/locations/${locationId}`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
 
               const result = await response.json();
 
@@ -157,7 +195,10 @@ const MainPanelScreen = () => {
                 Alert.alert("Success", "Location deleted successfully!");
                 fetchLocations(); // Refresh the list to remove deleted location
               } else {
-                Alert.alert("Error", result.message || "Failed to delete location");
+                Alert.alert(
+                  "Error",
+                  result.message || "Failed to delete location"
+                );
               }
             } catch (error) {
               console.error("Delete error:", error);
@@ -173,7 +214,7 @@ const MainPanelScreen = () => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchLocations();
+    fetchLocations(false);
   };
 
   const handleLocationPress = (item) => {
@@ -203,7 +244,7 @@ const MainPanelScreen = () => {
 
   const getCrowdLevel = (location) => {
     const totalActivities = location.activities.length;
-    
+
     if (totalActivities === 0) {
       return { level: "No Data", color: "#999", percentage: 0 };
     }
@@ -219,7 +260,10 @@ const MainPanelScreen = () => {
       { min: 0, moderate: 0, max: 0 }
     );
 
-    if (crowdCounts.max >= crowdCounts.moderate && crowdCounts.max >= crowdCounts.min) {
+    if (
+      crowdCounts.max >= crowdCounts.moderate &&
+      crowdCounts.max >= crowdCounts.min
+    ) {
       return {
         level: "High Crowd",
         color: "#F44336",
@@ -320,9 +364,7 @@ const MainPanelScreen = () => {
             <View
               style={[styles.legendColor, { backgroundColor: "#4CAF50" }]}
             />
-            <Text style={styles.legendText}>
-              Low ({crowdCounts.min})
-            </Text>
+            <Text style={styles.legendText}>Low ({crowdCounts.min})</Text>
           </View>
           <View style={styles.legendItem}>
             <View
@@ -336,9 +378,7 @@ const MainPanelScreen = () => {
             <View
               style={[styles.legendColor, { backgroundColor: "#F44336" }]}
             />
-            <Text style={styles.legendText}>
-              High ({crowdCounts.max})
-            </Text>
+            <Text style={styles.legendText}>High ({crowdCounts.max})</Text>
           </View>
         </View>
 
@@ -346,8 +386,7 @@ const MainPanelScreen = () => {
         {location.activities.length > 0 && (
           <View style={styles.lastUpdateContainer}>
             <Text style={styles.lastUpdateText}>
-              Last update:{" "}
-              {formatTimeAgo(location.activities[0].timestamp)}
+              Last update: {formatTimeAgo(location.activities[0].timestamp)}
             </Text>
           </View>
         )}
@@ -375,7 +414,7 @@ const MainPanelScreen = () => {
             >
               <Text style={styles.statusText}>{crowdInfo.level}</Text>
             </View>
-            
+
             {/* Delete Button */}
             <TouchableOpacity
               style={[styles.deleteButton, isDeleting && styles.deletingButton]}
@@ -429,7 +468,14 @@ const MainPanelScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.header}>Live Crowd Monitoring</Text>
+        <View>
+          <Text style={styles.header}>Live Crowd Monitoring</Text>
+          {lastUpdated && (
+            <Text style={styles.lastUpdatedText}>
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </Text>
+          )}
+        </View>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setModalVisible(true)}
@@ -524,7 +570,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "white",
-    flex: 1,
   },
   addButton: {
     backgroundColor: "rgba(255,255,255,0.2)",
@@ -733,6 +778,11 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "white",
     fontWeight: "bold",
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 2,
   },
 });
 
