@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   Alert,
   ActivityIndicator,
 } from "react-native";
@@ -25,7 +24,6 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
 
   // Your backend URL - Update this to your actual backend URL
   const BACKEND_URL = `${API_BASE_URL}`; // Change to your server URL
@@ -158,7 +156,7 @@ const RegisterScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           {/* Header */}
@@ -219,6 +217,7 @@ const RegisterScreen = () => {
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter your full name"
+                placeholderTextColor="#545151ff"
                 autoCapitalize="words"
                 editable={!isLoading}
               />
@@ -232,6 +231,7 @@ const RegisterScreen = () => {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
+                placeholderTextColor="#545151ff"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -250,6 +250,7 @@ const RegisterScreen = () => {
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="Enter your phone number"
+                  placeholderTextColor="#545151ff"
                   keyboardType="phone-pad"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -266,6 +267,7 @@ const RegisterScreen = () => {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create a password (min 6 characters)"
+                placeholderTextColor="#545151ff"
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -281,6 +283,7 @@ const RegisterScreen = () => {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm your password"
+                placeholderTextColor="#545151ff"
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -318,7 +321,7 @@ const RegisterScreen = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -366,7 +369,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e40af",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 20
+    borderRadius: 20,
   },
   logoText: {
     color: "white",

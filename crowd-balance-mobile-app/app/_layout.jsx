@@ -3,6 +3,7 @@ import AppStatusBar from "../components/StatusBar/StatusBar";
 
 function RootLayout() {
   console.log("RootLayout rendered");
+  console.log("*".repeat(50));
 
   return (
     <>

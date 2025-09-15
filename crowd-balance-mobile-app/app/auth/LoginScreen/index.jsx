@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   Alert,
   Image,
 } from "react-native";
@@ -93,7 +92,7 @@ const Login = () => {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.card}>
             {/* Header */}
@@ -121,6 +120,7 @@ const Login = () => {
                   placeholder={
                     role === "panel" ? "panel@engex.com" : "organizer@engex.com"
                   }
+                  placeholderTextColor="#545151ff"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -136,6 +136,7 @@ const Login = () => {
                   value={user.password}
                   onChangeText={(text) => handleInputChange("password", text)}
                   placeholder="Enter your password"
+                  placeholderTextColor="#545151ff"
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -153,9 +154,7 @@ const Login = () => {
                 disabled={isLoading}
               >
                 <Text style={styles.loginButtonText}>
-                  {isLoading
-                    ? "Logging in..."
-                    : `Login`}
+                  {isLoading ? "Logging in..." : `Login`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -163,7 +162,10 @@ const Login = () => {
             {/* Navigate to Registration Page */}
             <View style={styles.loginLinkContainer}>
               <Text style={styles.loginText}>Not registered yet? </Text>
-              <TouchableOpacity onPress={navigateToRegister} disabled={isLoading}>
+              <TouchableOpacity
+                onPress={navigateToRegister}
+                disabled={isLoading}
+              >
                 <Text
                   style={[styles.signUpText, isLoading && styles.disabledText]}
                 >
@@ -173,7 +175,7 @@ const Login = () => {
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </>
   );
 };

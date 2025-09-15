@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,39 +9,43 @@ import {
   Alert,
   StyleSheet,
   Platform,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Picker } from '@react-native-picker/picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
+} from "react-native";
+import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import { Picker } from "@react-native-picker/picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
 import { API_BASE_URL } from "../../config";
 
 const GetLostInfo = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    location: '',
-    description: '',
+    name: "",
+    age: "",
+    gender: "",
+    location: "",
+    description: "",
   });
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const pickImage = async () => {
     // Request permission
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
     if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "Permission to access camera roll is required!");
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera roll is required!"
+      );
       return;
     }
 
@@ -62,9 +66,12 @@ const GetLostInfo = () => {
   const takePhoto = async () => {
     // Request camera permission
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    
+
     if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "Permission to access camera is required!");
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera is required!"
+      );
       return;
     }
 
@@ -82,21 +89,20 @@ const GetLostInfo = () => {
   };
 
   const showImageOptions = () => {
-    Alert.alert(
-      "Select Photo",
-      "Choose how you'd like to add a photo",
-      [
-        { text: "Camera", onPress: takePhoto },
-        { text: "Gallery", onPress: pickImage },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
+    Alert.alert("Select Photo", "Choose how you'd like to add a photo", [
+      { text: "Camera", onPress: takePhoto },
+      { text: "Gallery", onPress: pickImage },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const handleSubmit = async () => {
     // Validate required fields
     if (!formData.name.trim() || !formData.age.trim() || !formData.gender) {
-      Alert.alert("Error", "Please fill in all required fields (Name, Age, Gender)");
+      Alert.alert(
+        "Error",
+        "Please fill in all required fields (Name, Age, Gender)"
+      );
       return;
     }
 
@@ -134,16 +140,16 @@ const GetLostInfo = () => {
         image: `data:image/jpeg;base64,${photo.base64}`, // Convert to base64 data URL
         lastseenlocation: formData.location.trim(),
         description: [formData.description.trim()], // Convert to array as expected by backend
-        UserId: userId
+        UserId: userId,
       };
 
       console.log("Sending report data..");
 
       // Send to backend
       const response = await fetch(`${API_BASE_URL}/missing-reports`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(reportData),
         timeout: 15000, // 15 second timeout
@@ -153,7 +159,7 @@ const GetLostInfo = () => {
 
       if (response.ok) {
         console.log("Report created successfully:", result.report);
-        
+
         // Show success alert
         Alert.alert(
           "Alert Sent Successfully! ✅",
@@ -161,32 +167,35 @@ const GetLostInfo = () => {
           [
             {
               text: "View Dashboard",
-              onPress: () => router.push("/dashboard") // Go to dashboard
+              onPress: () => router.push("/dashboard"), // Go to dashboard
             },
             {
               text: "Report Another",
               onPress: () => {
                 // Reset form
                 setFormData({
-                  name: '',
-                  age: '',
-                  gender: '',
-                  location: '',
-                  description: '',
+                  name: "",
+                  age: "",
+                  gender: "",
+                  location: "",
+                  description: "",
                 });
                 setPhoto(null);
-              }
-            }
+              },
+            },
           ]
         );
       } else {
         console.error("Server error:", result.message);
-        Alert.alert("Error", result.message || "Failed to send alert. Please try again.");
+        Alert.alert(
+          "Error",
+          result.message || "Failed to send alert. Please try again."
+        );
       }
     } catch (error) {
       console.error("Network error:", error);
       Alert.alert(
-        "Network Error", 
+        "Network Error",
         "Unable to send alert. Please check your internet connection and try again."
       );
     } finally {
@@ -215,8 +224,9 @@ const GetLostInfo = () => {
             <TextInput
               style={styles.input}
               placeholder="e.g., John Doe"
+              placeholderTextColor="#545151ff"
               value={formData.name}
-              onChangeText={(text) => handleInputChange('name', text)}
+              onChangeText={(text) => handleInputChange("name", text)}
             />
           </View>
           <View style={styles.inputContainer}>
@@ -224,8 +234,9 @@ const GetLostInfo = () => {
             <TextInput
               style={styles.input}
               placeholder="e.g., 7"
+              placeholderTextColor="#545151ff"
               value={formData.age}
-              onChangeText={(text) => handleInputChange('age', text)}
+              onChangeText={(text) => handleInputChange("age", text)}
               keyboardType="numeric"
             />
           </View>
@@ -236,7 +247,7 @@ const GetLostInfo = () => {
           <View style={styles.pickerContainer}>
             <Picker
               selectedValue={formData.gender}
-              onValueChange={(value) => handleInputChange('gender', value)}
+              onValueChange={(value) => handleInputChange("gender", value)}
               style={styles.picker}
             >
               <Picker.Item label="Select gender" value="" />
@@ -249,7 +260,10 @@ const GetLostInfo = () => {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Photo *</Text>
           <View style={styles.photoContainer}>
-            <TouchableOpacity style={styles.photoPreview} onPress={showImageOptions}>
+            <TouchableOpacity
+              style={styles.photoPreview}
+              onPress={showImageOptions}
+            >
               {photo ? (
                 <Image source={{ uri: photo.uri }} style={styles.photo} />
               ) : (
@@ -267,8 +281,9 @@ const GetLostInfo = () => {
           <TextInput
             style={styles.input}
             placeholder="e.g., Near Lecture Hall 5"
+            placeholderTextColor="#545151ff"
             value={formData.location}
-            onChangeText={(text) => handleInputChange('location', text)}
+            onChangeText={(text) => handleInputChange("location", text)}
           />
         </View>
 
@@ -277,16 +292,17 @@ const GetLostInfo = () => {
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="e.g., Wearing a blue t-shirt, red shorts, and a white cap."
+            placeholderTextColor="#545151ff"
             value={formData.description}
-            onChangeText={(text) => handleInputChange('description', text)}
+            onChangeText={(text) => handleInputChange("description", text)}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
           />
         </View>
 
-        <TouchableOpacity 
-          style={[styles.submitButton, loading && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.submitButton, loading && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={loading}
         >
@@ -302,17 +318,17 @@ const GetLostInfo = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: "#e5e7eb",
   },
   titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   alertIcon: {
@@ -320,19 +336,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: "bold",
+    color: "#111827",
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: "#6b7280",
     marginTop: 4,
   },
   form: {
     padding: 20,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   inputContainer: {
@@ -341,17 +357,17 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#d1d5db",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   textArea: {
     height: 100,
@@ -359,34 +375,41 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#d1d5db",
     borderRadius: 8,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   picker: {
-    height: 50,
+    ...Platform.select({
+      ios: {
+        height: 200, // enough space for iOS spinner
+      },
+      android: {
+        height: 50, // typical dropdown height
+      },
+    }),
   },
   photoContainer: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   photoPreview: {
     width: 120,
     height: 120,
     borderRadius: 8,
     borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#9ca3af',
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderStyle: "dashed",
+    borderColor: "#9ca3af",
+    backgroundColor: "#f3f4f6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   photo: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 6,
   },
   photoPlaceholder: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   cameraIcon: {
     fontSize: 24,
@@ -394,24 +417,24 @@ const styles = StyleSheet.create({
   },
   photoText: {
     fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
+    color: "#616264ff",
+    textAlign: "center",
   },
   submitButton: {
     marginBottom: 10,
     backgroundColor: "#1e40af",
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   disabledButton: {
     backgroundColor: "#9ca3af",
   },
   submitButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 
