@@ -41,7 +41,7 @@ const Profile = () => {
         setAssignedHall(u.assignedHall || "");
         setStatus(u.status || "Available");
       } catch (err) {
-        console.error(err);
+        console.log(err);
         router.replace("/auth/LoginScreen");
       }
     };
@@ -150,7 +150,7 @@ const Profile = () => {
       ]);
 
     } catch (err) {
-      console.error("Error updating profile:", err);
+      console.log("Error updating profile:", err);
       Alert.alert(
         "Error", 
         err.response?.data?.message || "Failed to update profile. Please try again."

@@ -72,7 +72,7 @@ const RegisterScreen = () => {
         );
       }
     } catch (error) {
-      console.error("Registration error:", error);
+      console.log("Registration error:", error);
       Alert.alert(
         "Network Error",
         "Unable to connect to server. Please check your connection and try again."
@@ -211,13 +211,13 @@ const RegisterScreen = () => {
 
             {/* Name Input */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>Full Name <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={[styles.input, isLoading && styles.inputDisabled]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter your full name"
-                placeholderTextColor="#545151ff"
+                placeholderTextColor="#837f7fff"
                 autoCapitalize="words"
                 editable={!isLoading}
               />
@@ -225,13 +225,13 @@ const RegisterScreen = () => {
 
             {/* Email Input */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Email <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={[styles.input, isLoading && styles.inputDisabled]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
-                placeholderTextColor="#545151ff"
+                placeholderTextColor="#837f7fff"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -250,7 +250,7 @@ const RegisterScreen = () => {
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="Enter your phone number"
-                  placeholderTextColor="#545151ff"
+                  placeholderTextColor="#837f7fff"
                   keyboardType="phone-pad"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -261,13 +261,13 @@ const RegisterScreen = () => {
 
             {/* Password Input */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={[styles.input, isLoading && styles.inputDisabled]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create a password (min 6 characters)"
-                placeholderTextColor="#545151ff"
+                placeholderTextColor="#837f7fff"
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -277,13 +277,13 @@ const RegisterScreen = () => {
 
             {/* Confirm Password Input */}
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={styles.label}>Confirm Password <Text style={styles.required}>*</Text></Text>
               <TextInput
                 style={[styles.input, isLoading && styles.inputDisabled]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm your password"
-                placeholderTextColor="#545151ff"
+                placeholderTextColor="#837f7fff"
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}

@@ -83,7 +83,7 @@ const MainPanelScreen = () => {
                 activities: [],
               };
             } catch (error) {
-              console.error(
+              console.log(
                 `Error fetching activities for ${location.name}:`,
                 error
               );
@@ -113,7 +113,7 @@ const MainPanelScreen = () => {
       if (!isAutoRefresh) {
         Alert.alert("Error", "Network error occurred");
       } else {
-        console.error("Auto-refresh error:", error);
+        console.log("Auto-refresh error:", error);
       }
     } finally {
       setLoading(false);
@@ -201,7 +201,7 @@ const MainPanelScreen = () => {
                 );
               }
             } catch (error) {
-              console.error("Delete error:", error);
+              console.log("Delete error:", error);
               Alert.alert("Error", "Network error occurred while deleting");
             } finally {
               setDeleting(null); // Clear loading state
@@ -237,7 +237,7 @@ const MainPanelScreen = () => {
         },
       });
     } catch (error) {
-      console.error("Navigation error:", error);
+      console.log("Navigation error:", error);
       Alert.alert("Error", "Unable to navigate to location details");
     }
   };
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerContainer: {
-    marginTop: 0,
+    paddingTop: 40,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

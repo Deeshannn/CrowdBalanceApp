@@ -48,7 +48,7 @@ const Dashboard = () => {
         return await asyncFn(...args);
       } catch (error) {
         if (!isMountedRef.current) return;
-        console.error("Safe async error:", error);
+        console.log("Safe async error:", error);
         throw error;
       }
     };
@@ -125,7 +125,7 @@ useEffect(() => {
           throw new Error("Invalid response from server");
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
+        console.log("Error fetching user:", error);
 
         if (!isMountedRef.current) return;
 
@@ -148,7 +148,7 @@ useEffect(() => {
             router.replace("/auth/login");
           }
         } catch (fallbackError) {
-          console.error("Fallback error:", fallbackError);
+          console.log("Fallback error:", fallbackError);
           console.log("*".repeat(50));
           await AsyncStorage.clear();
           router.replace("/auth/login");
@@ -189,7 +189,7 @@ useEffect(() => {
           );
         }
       } catch (error) {
-        console.error("Error fetching notifications:", error);
+        console.log("Error fetching notifications:", error);
 
         // Handle specific error cases
         if (error.response && error.response.status === 404) {
@@ -229,7 +229,7 @@ useEffect(() => {
           console.log("Notification dismissed successfully");
         }
       } catch (error) {
-        console.error("Error dismissing notification:", error);
+        console.log("Error dismissing notification:", error);
         if (isMountedRef.current) {
           Alert.alert(
             "Error",
@@ -313,7 +313,7 @@ useEffect(() => {
           );
         }
       } catch (error) {
-        console.error("Error deleting report:", error);
+        console.log("Error deleting report:", error);
 
         if (!isMountedRef.current) return;
 
@@ -358,7 +358,7 @@ useEffect(() => {
         await fetchNotifications(userId, false);
       }
     } catch (error) {
-      console.error("Error during refresh:", error);
+      console.log("Error during refresh:", error);
     } finally {
       if (isMountedRef.current) {
         setRefreshing(false);
@@ -377,7 +377,7 @@ useEffect(() => {
         date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       );
     } catch (error) {
-      console.error("Error formatting date:", error);
+      console.log("Error formatting date:", error);
       return "Invalid Date";
     }
   }, []);
@@ -406,7 +406,7 @@ useEffect(() => {
             await AsyncStorage.clear();
             router.replace("/auth/LoginScreen");
           } catch (error) {
-            console.error("Error during logout:", error);
+            console.log("Error during logout:", error);
             router.replace("/auth/LoginScreen");
           }
         },
@@ -485,7 +485,7 @@ useEffect(() => {
           return `${diffSecs}s remaining`;
         }
       } catch (error) {
-        console.error("Error calculating time remaining:", error);
+        console.log("Error calculating time remaining:", error);
         return "Time unavailable";
       }
     };

@@ -151,7 +151,7 @@ const AssignOrganizers = () => {
       setAssignedOrganizers(assignedOrganizersList);
       setLastUpdated(new Date());
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.log("Error fetching data:", error);
       Alert.alert(
         "Error",
         "Failed to fetch organizer data. Please check your connection and try again.",
@@ -450,7 +450,7 @@ const AssignOrganizers = () => {
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const textResponse = await response.text();
-        console.error("Non-JSON response:", textResponse);
+        console.log("Non-JSON response:", textResponse);
         throw new Error(
           "Server returned non-JSON response. Please check server status."
         );
@@ -530,7 +530,7 @@ const AssignOrganizers = () => {
         throw new Error(result.message || "Assignment failed");
       }
     } catch (error) {
-      console.error("Error assigning organizer:", error);
+      console.log("Error assigning organizer:", error);
 
       let errorMessage = "Failed to assign organizer. Please try again.";
 
@@ -576,7 +576,7 @@ const AssignOrganizers = () => {
               const contentType = response.headers.get("content-type");
               if (!contentType || !contentType.includes("application/json")) {
                 const textResponse = await response.text();
-                console.error("Non-JSON response:", textResponse);
+                console.log("Non-JSON response:", textResponse);
                 throw new Error(
                   "Server returned non-JSON response. Please check server status."
                 );
@@ -591,7 +591,7 @@ const AssignOrganizers = () => {
                 throw new Error(result.message || "Unassignment failed");
               }
             } catch (error) {
-              console.error("Error unassigning organizer:", error);
+              console.log("Error unassigning organizer:", error);
 
               let errorMessage =
                 "Failed to unassign organizer. Please try again.";
@@ -792,6 +792,7 @@ const AssignOrganizers = () => {
           <TextInput
             style={styles.searchInput}
             placeholder="Search organizers by name..."
+            placeholderTextColor="#837f7fff"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -977,12 +978,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   centerContainer: {
-    marginTop: 60,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   headerContainer: {
+    paddingTop: 30,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#007AFF",

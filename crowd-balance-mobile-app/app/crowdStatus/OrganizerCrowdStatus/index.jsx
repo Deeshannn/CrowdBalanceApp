@@ -97,7 +97,7 @@ const OrganizerScreen = () => {
       }
     } catch (error) {
       Alert.alert("Error", "Network error occurred");
-      console.error("Fetch error:", error);
+      console.log("Fetch error:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,7 +129,7 @@ const OrganizerScreen = () => {
       }
     } catch (error) {
       Alert.alert("Error", "Network error occurred");
-      console.error("Update error:", error);
+      console.log("Update error:", error);
     }
   };
 

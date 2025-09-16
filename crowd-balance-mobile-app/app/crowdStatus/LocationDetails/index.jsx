@@ -69,7 +69,7 @@ const LocationDetail = () => {
         setOrganizers(organizersResult.data.organizers || []);
       }
     } catch (error) {
-      console.error("Error fetching location details:", error);
+      console.log("Error fetching location details:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -667,6 +667,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginTop: 0,
+    paddingTop: 30,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#007AFF",

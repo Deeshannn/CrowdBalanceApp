@@ -186,14 +186,14 @@ const GetLostInfo = () => {
           ]
         );
       } else {
-        console.error("Server error:", result.message);
+        console.log("Server error:", result.message);
         Alert.alert(
           "Error",
           result.message || "Failed to send alert. Please try again."
         );
       }
     } catch (error) {
-      console.error("Network error:", error);
+      console.log("Network error:", error);
       Alert.alert(
         "Network Error",
         "Unable to send alert. Please check your internet connection and try again."

@@ -74,7 +74,7 @@ const Login = () => {
         Alert.alert("Login Failed", data.err || "Invalid credentials");
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.log("Login error:", err);
       Alert.alert("Login Failed", err.message || "Something went wrong");
     } finally {
       setIsLoading(false);
@@ -120,7 +120,7 @@ const Login = () => {
                   placeholder={
                     role === "panel" ? "panel@engex.com" : "organizer@engex.com"
                   }
-                  placeholderTextColor="#545151ff"
+                  placeholderTextColor="#837f7fff"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -136,7 +136,7 @@ const Login = () => {
                   value={user.password}
                   onChangeText={(text) => handleInputChange("password", text)}
                   placeholder="Enter your password"
-                  placeholderTextColor="#545151ff"
+                  placeholderTextColor="#837f7fff"
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
