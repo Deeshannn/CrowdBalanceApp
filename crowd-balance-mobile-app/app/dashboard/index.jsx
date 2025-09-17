@@ -70,7 +70,7 @@ const Dashboard = () => {
       if (isMountedRef.current) {
         fetchMissingReports();
       }
-    }, 60000); // Refresh every 30 seconds
+    }, 60000); // Refresh every 60 seconds
 
     return () => {
       clearInterval(reportsPollingInterval);
@@ -723,13 +723,6 @@ const Dashboard = () => {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => router.push("/profile")}
-          >
-            <Text style={styles.buttonText}>View Profile</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.button}
             onPress={handleCrowdStatusNavigation}
           >
             <Text style={styles.buttonText}>Crowd Status</Text>
@@ -740,6 +733,13 @@ const Dashboard = () => {
             onPress={() => router.push("/SchoolDataScreen")}
           >
             <Text style={styles.buttonText}>School Data</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push("/profile")}
+          >
+            <Text style={styles.buttonText}>View Profile</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
