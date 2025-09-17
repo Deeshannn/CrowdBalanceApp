@@ -33,8 +33,8 @@ const AppStatusBar = ({ backgroundColor = "black", barStyle = "light-content" })
     return (
       <>
         <RNStatusBar
-          backgroundColor={backgroundColor}
-          barStyle={barStyle}
+          // backgroundColor={backgroundColor}
+          // barStyle={barStyle}
           animated={true}
         />
         <SafeAreaView 
@@ -52,8 +52,8 @@ const AppStatusBar = ({ backgroundColor = "black", barStyle = "light-content" })
     <>
       <RNStatusBar
         translucent={true}
-        backgroundColor="transparent"
-        barStyle={barStyle}
+        // backgroundColor="transparent"
+        // barStyle={barStyle}
         animated={true}
       />
       <View 

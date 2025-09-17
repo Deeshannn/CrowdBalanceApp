@@ -9,8 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "statusBarStyle": "light"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -18,9 +17,6 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": false,
-      "statusBarBackgroundColor": "#000000",
-      "statusBarStyle": "light",
-      "statusBarTranslucent": true,
       "package": "com.ridmal.crowdbalancemobileapp"
     },
     "web": {
