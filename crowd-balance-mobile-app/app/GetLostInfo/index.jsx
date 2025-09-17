@@ -98,28 +98,28 @@ const GetLostInfo = () => {
 
   const handleSubmit = async () => {
     // Validate required fields
-    if (!formData.name.trim() || !formData.age.trim() || !formData.gender) {
+    if (!formData.age.trim() || !formData.gender) {
       Alert.alert(
         "Error",
-        "Please fill in all required fields (Name, Age, Gender)"
+        "Please fill in all required fields (Age, Gender, Last Seen Location)"
       );
       return;
     }
 
-    if (!photo) {
-      Alert.alert("Error", "Please add a photo of the missing person");
-      return;
-    }
+    // if (!photo) {
+    //   Alert.alert("Error", "Please add a photo of the missing person");
+    //   return;
+    // }
 
     if (!formData.location.trim()) {
       Alert.alert("Error", "Please provide the last seen location");
       return;
     }
 
-    if (!formData.description.trim()) {
-      Alert.alert("Error", "Please provide a description");
-      return;
-    }
+    // if (!formData.description.trim()) {
+    //   Alert.alert("Error", "Please provide a description");
+    //   return;
+    // }
 
     setLoading(true);
 
@@ -134,12 +134,12 @@ const GetLostInfo = () => {
 
       // Prepare the data
       const reportData = {
-        name: formData.name.trim(),
+        name: formData.name ? formData.name.trim() : null,
         age: parseInt(formData.age),
         gender: formData.gender,
-        image: `data:image/jpeg;base64,${photo.base64}`, // Convert to base64 data URL
+        image: photo ? `data:image/jpeg;base64,${photo.base64}` : null, // Convert to base64 data URL
         lastseenlocation: formData.location.trim(),
-        description: [formData.description.trim()], // Convert to array as expected by backend
+        description: formData.description.trim() ? [formData.description.trim()] : [], // Convert to array as expected by backend
         UserId: userId,
       };
 
@@ -220,7 +220,7 @@ const GetLostInfo = () => {
       <View style={styles.form}>
         <View style={styles.row}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Name *</Text>
+            <Text style={styles.label}>Name</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g., John Doe"
@@ -258,7 +258,7 @@ const GetLostInfo = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Photo *</Text>
+          <Text style={styles.label}>Photo</Text>
           <View style={styles.photoContainer}>
             <TouchableOpacity
               style={styles.photoPreview}
@@ -288,7 +288,7 @@ const GetLostInfo = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Description *</Text>
+          <Text style={styles.label}>Description</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="e.g., Wearing a blue t-shirt, red shorts, and a white cap."
