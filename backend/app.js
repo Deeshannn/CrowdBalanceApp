@@ -24,7 +24,6 @@ app.use("/users", userRouter);
 app.use("/missing-reports", missingReportRouter);
 app.use("/locations", locationRoutes);
 app.use("/notifications", notificationRouter);
-console.log('Registering school routes at /schools');
 app.use('/schools', schoolRoutes);
 
 // Health check endpoint 

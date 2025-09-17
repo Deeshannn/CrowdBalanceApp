@@ -77,8 +77,8 @@ const AssignOrganizers = () => {
         locationsResponse.json(),
       ]);
 
-      console.log("Organizers API Response:", organizersResult);
-      console.log("Locations API Response:", locationsResult);
+      // console.log("Organizers API Response:", organizersResult);
+      // console.log("Locations API Response:", locationsResult);
 
       // Handle organizers data with better error handling
       let allOrganizers = [];

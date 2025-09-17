@@ -14,7 +14,6 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as FileSystem from "expo-file-system";
 import { API_BASE_URL } from "../../config";
 
 const GetLostInfo = () => {
@@ -143,7 +142,7 @@ const GetLostInfo = () => {
         UserId: userId,
       };
 
-      console.log("Sending report data..");
+      console.log("Sending report data...");
 
       // Send to backend
       const response = await fetch(`${API_BASE_URL}/missing-reports`, {
@@ -158,7 +157,7 @@ const GetLostInfo = () => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log("Report created successfully:", result.report);
+        console.log("Report created successfully:");
 
         // Show success alert
         Alert.alert(

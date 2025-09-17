@@ -34,6 +34,9 @@ function RootLayout() {
         />
 
         <Stack.Screen name="crowdStatus" options={{ headerShown: false }} />
+        <Stack.Screen name="SchoolDataScreen/index" options={{ headerShown: false }} />
+        <Stack.Screen name="OrganizerLocations/index" options={{ headerShown: false }} />
+
       </Stack>
     </>
   );
