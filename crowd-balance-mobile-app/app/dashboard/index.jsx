@@ -721,6 +721,16 @@ const Dashboard = () => {
         </View>
 
         <View style={styles.buttonContainer}>
+          {/* Horizontal Line */}
+          <View
+            style={{
+              borderBottomColor: "#ccc",
+              borderBottomWidth: 1,
+              marginVertical: 10,
+              marginHorizontal: 5,
+            }}
+          />
+
           <TouchableOpacity
             style={styles.button}
             onPress={handleCrowdStatusNavigation}
@@ -734,6 +744,23 @@ const Dashboard = () => {
           >
             <Text style={styles.buttonText}>School Data</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push("/OrganizerLocations")}
+          >
+            <Text style={styles.buttonText}>Organizer Locations</Text>
+          </TouchableOpacity>
+
+          {/* Horizontal Line */}
+          <View
+            style={{
+              borderBottomColor: "#ccc",
+              borderBottomWidth: 1,
+              marginVertical: 10,
+              marginHorizontal: 5,
+            }}
+          />
 
           <TouchableOpacity
             style={styles.button}
