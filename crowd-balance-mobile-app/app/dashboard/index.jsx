@@ -54,6 +54,42 @@ const Dashboard = () => {
     };
   }, []);
 
+  const fetchMissingReports = useCallback(
+    safeAsync(async () => {
+      if (isMountedRef.current) {
+        setReportsLoading(true);
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
+          timeout: 10000,
+        });
+
+        if (response.data && response.data.reports && isMountedRef.current) {
+          setMissingReports(response.data.reports);
+          console.log(
+            "Fetched all missing reports:",
+            response.data.reports.length
+          );
+        } else if (isMountedRef.current) {
+          // Handle case where response doesn't contain reports
+          setMissingReports([]);
+        }
+      } catch (error) {
+        console.log("❌ No missing persons: ", error);
+        // Set empty array on error to clear any stale data
+        if (isMountedRef.current) {
+          setMissingReports([]);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setReportsLoading(false);
+        }
+      }
+    }),
+    [safeAsync]
+  );
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -236,42 +272,6 @@ const Dashboard = () => {
             "Failed to dismiss notification. Please try again.",
             [{ text: "OK" }]
           );
-        }
-      }
-    }),
-    [safeAsync]
-  );
-
-  const fetchMissingReports = useCallback(
-    safeAsync(async () => {
-      if (isMountedRef.current) {
-        setReportsLoading(true);
-      }
-
-      try {
-        const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
-          timeout: 10000,
-        });
-
-        if (response.data && response.data.reports && isMountedRef.current) {
-          setMissingReports(response.data.reports);
-          console.log(
-            "Fetched all missing reports:",
-            response.data.reports.length
-          );
-        } else if (isMountedRef.current) {
-          // Handle case where response doesn't contain reports
-          setMissingReports([]);
-        }
-      } catch (error) {
-        console.log("❌ No missing persons: ", error);
-        // Set empty array on error to clear any stale data
-        if (isMountedRef.current) {
-          setMissingReports([]);
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setReportsLoading(false);
         }
       }
     }),
