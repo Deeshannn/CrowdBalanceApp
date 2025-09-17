@@ -25,6 +25,11 @@ const LocationDetail = () => {
   const [clearingActivities, setClearingActivities] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
 
+  // New states for unassign functionality
+  const [unassigningOrganizer, setUnassigningOrganizer] = useState(null);
+  const [showUnassignModal, setShowUnassignModal] = useState(false);
+  const [selectedOrganizer, setSelectedOrganizer] = useState(null);
+
   const fetchLocationDetails = useCallback(async (locationId) => {
     if (!locationId) return;
 
@@ -182,6 +187,86 @@ const LocationDetail = () => {
     }
   };
 
+  // New function to handle unassigning organizers
+  const handleUnassignOrganizer = async () => {
+    if (!selectedOrganizer) return;
+
+    setUnassigningOrganizer(selectedOrganizer._id);
+    setShowUnassignModal(false);
+
+    try {
+      console.log(
+        "Unassigning organizer:",
+        selectedOrganizer._id,
+        "from location:",
+        location._id
+      );
+
+      // Update the organizer's assignedHall field to empty string
+      const response = await fetch(
+        `${API_BASE_URL}/users/organizers/${selectedOrganizer._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            assignedHall: "",
+            // status: "Available" // Uncomment if you want to also change status
+          }),
+        }
+      );
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textResponse = await response.text();
+        console.log("Non-JSON response:", textResponse);
+        throw new Error(
+          "Server returned non-JSON response. Please check server status."
+        );
+      }
+
+      const result = await response.json();
+      console.log("Unassign response:", result);
+
+      if (result.organizer || result.success) {
+        Alert.alert(
+          "Success",
+          `${selectedOrganizer.name || "Organizer"} has been unassigned from ${
+            location.name
+          }`
+        );
+        // Refresh the data to update organizers list
+        fetchLocationDetails(location._id);
+      } else {
+        throw new Error(result.message || "Unassignment failed");
+      }
+    } catch (error) {
+      console.log("❌ Error unassigning organizer:", error);
+
+      let errorMessage = "Failed to unassign organizer. Please try again.";
+
+      if (error.name === "SyntaxError" && error.message.includes("JSON")) {
+        errorMessage =
+          "Server error: Unable to process the request. Please check if the server is running properly.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setUnassigningOrganizer(null);
+      setSelectedOrganizer(null);
+    }
+  };
+
+  // Function to show unassign confirmation
+  const showUnassignConfirmation = (organizer) => {
+    setSelectedOrganizer(organizer);
+    setShowUnassignModal(true);
+  };
+
   const renderClearModal = () => (
     <Modal
       animationType="fade"
@@ -216,6 +301,62 @@ const LocationDetail = () => {
               onPress={handleClearActivities}
             >
               <Text style={styles.confirmButtonText}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // New modal for unassign confirmation
+  const renderUnassignModal = () => (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={showUnassignModal}
+      onRequestClose={() => setShowUnassignModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Icon name="person-remove" size={32} color="#FF9800" />
+            <Text style={styles.modalTitle}>Unassign Organizer</Text>
+          </View>
+
+          <Text style={styles.modalMessage}>
+            Are you sure you want to unassign{" "}
+            <Text style={styles.boldText}>
+              {selectedOrganizer?.name || "this organizer"}
+            </Text>{" "}
+            from <Text style={styles.boldText}>{location?.name}</Text>?
+          </Text>
+
+          <Text style={styles.modalWarning}>
+            They will be marked as available and can be assigned to other
+            locations.
+          </Text>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setShowUnassignModal(false);
+                setSelectedOrganizer(null);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.unassignButton]}
+              onPress={handleUnassignOrganizer}
+              disabled={unassigningOrganizer === selectedOrganizer?._id}
+            >
+              {unassigningOrganizer === selectedOrganizer?._id ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.unassignButtonText}>Unassign</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -404,6 +545,7 @@ const LocationDetail = () => {
     );
   };
 
+  // Updated renderAssignedOrganizers with unassign functionality
   const renderAssignedOrganizers = () => {
     if (organizers.length === 0) {
       return (
@@ -433,6 +575,18 @@ const LocationDetail = () => {
                 Phone: {organizer.phone || "N/A"}
               </Text>
             </View>
+            {/* Unassign button */}
+            <TouchableOpacity
+              style={styles.unassignIconButton}
+              onPress={() => showUnassignConfirmation(organizer)}
+              disabled={unassigningOrganizer === organizer._id}
+            >
+              {unassigningOrganizer === organizer._id ? (
+                <ActivityIndicator size="small" color="#FF9800" />
+              ) : (
+                <Icon name="person-remove" size={20} color="#FF9800" />
+              )}
+            </TouchableOpacity>
           </View>
         ))}
       </View>
@@ -637,8 +791,9 @@ const LocationDetail = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      {/* Add this modal before closing </View> */}
+      {/* Modals */}
       {renderClearModal()}
+      {renderUnassignModal()}
     </View>
   );
 };
@@ -1055,6 +1210,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 20,
   },
+  // New Unassign Button Styles
+  unassignIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFF3E0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FFE0B2",
+    marginLeft: 8,
+  },
   // Modal Styles
   modalOverlay: {
     flex: 1,
@@ -1117,12 +1284,22 @@ const styles = StyleSheet.create({
   confirmButton: {
     backgroundColor: "#F44336",
   },
+  // New Unassign Modal Button Style
+  unassignButton: {
+    backgroundColor: "#FF9800",
+  },
   cancelButtonText: {
     color: "#666",
     fontWeight: "600",
     fontSize: 16,
   },
   confirmButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  // New Unassign Modal Button Text Style
+  unassignButtonText: {
     color: "white",
     fontWeight: "600",
     fontSize: 16,
@@ -1143,6 +1320,10 @@ const styles = StyleSheet.create({
     color: "#F44336",
     fontWeight: "600",
     marginLeft: 4,
+  },
+  // Additional styles for modal text formatting
+  boldText: {
+    fontWeight: "bold",
   },
 });
 

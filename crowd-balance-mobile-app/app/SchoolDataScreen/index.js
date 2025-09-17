@@ -200,7 +200,7 @@ const SchoolDataScreen = () => {
       } else {
         fetchSchools();
       }
-    }, 5000); // adjust this to smooth search feature
+    }, 3000); // adjust this to smooth search feature
 
     return () => clearTimeout(timeoutId);
   }, [searchSchools, fetchSchools]);
