@@ -65,17 +65,17 @@ const Dashboard = () => {
   }, []);
 
   // Add this to your useEffect hooks
-useEffect(() => {
-  const reportsPollingInterval = setInterval(() => {
-    if (isMountedRef.current) {
-      fetchMissingReports();
-    }
-  }, 60000); // Refresh every 30 seconds
+  useEffect(() => {
+    const reportsPollingInterval = setInterval(() => {
+      if (isMountedRef.current) {
+        fetchMissingReports();
+      }
+    }, 60000); // Refresh every 30 seconds
 
-  return () => {
-    clearInterval(reportsPollingInterval);
-  };
-}, [fetchMissingReports]);
+    return () => {
+      clearInterval(reportsPollingInterval);
+    };
+  }, [fetchMissingReports]);
 
   const fetchUser = useCallback(
     safeAsync(async () => {
@@ -243,40 +243,40 @@ useEffect(() => {
   );
 
   const fetchMissingReports = useCallback(
-  safeAsync(async () => {
-    if (isMountedRef.current) {
-      setReportsLoading(true);
-    }
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
-        timeout: 10000,
-      });
-
-      if (response.data && response.data.reports && isMountedRef.current) {
-        setMissingReports(response.data.reports);
-        console.log(
-          "Fetched all missing reports:",
-          response.data.reports.length
-        );
-      } else if (isMountedRef.current) {
-        // Handle case where response doesn't contain reports
-        setMissingReports([]);
-      }
-    } catch (error) {
-      console.log("❌ No missing persons: ", error);
-      // Set empty array on error to clear any stale data
+    safeAsync(async () => {
       if (isMountedRef.current) {
-        setMissingReports([]);
+        setReportsLoading(true);
       }
-    } finally {
-      if (isMountedRef.current) {
-        setReportsLoading(false);
+
+      try {
+        const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
+          timeout: 10000,
+        });
+
+        if (response.data && response.data.reports && isMountedRef.current) {
+          setMissingReports(response.data.reports);
+          console.log(
+            "Fetched all missing reports:",
+            response.data.reports.length
+          );
+        } else if (isMountedRef.current) {
+          // Handle case where response doesn't contain reports
+          setMissingReports([]);
+        }
+      } catch (error) {
+        console.log("❌ No missing persons: ", error);
+        // Set empty array on error to clear any stale data
+        if (isMountedRef.current) {
+          setMissingReports([]);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setReportsLoading(false);
+        }
       }
-    }
-  }),
-  [safeAsync]
-);
+    }),
+    [safeAsync]
+  );
 
   const handleMarkAsFound = useCallback((reportId, personName) => {
     Alert.alert(
@@ -344,29 +344,29 @@ useEffect(() => {
   }, []);
 
   const onRefresh = useCallback(
-  safeAsync(async () => {
-    setRefreshing(true);
-    
-    // Clear current data before fetching
-    setMissingReports([]);
+    safeAsync(async () => {
+      setRefreshing(true);
 
-    try {
-      await fetchMissingReports();
+      // Clear current data before fetching
+      setMissingReports([]);
 
-      if (user && user.userType === "Organizer") {
-        const userId = user.id || user._id;
-        await fetchNotifications(userId, false);
+      try {
+        await fetchMissingReports();
+
+        if (user && user.userType === "Organizer") {
+          const userId = user.id || user._id;
+          await fetchNotifications(userId, false);
+        }
+      } catch (error) {
+        console.log("Error during refresh:", error);
+      } finally {
+        if (isMountedRef.current) {
+          setRefreshing(false);
+        }
       }
-    } catch (error) {
-      console.log("Error during refresh:", error);
-    } finally {
-      if (isMountedRef.current) {
-        setRefreshing(false);
-      }
-    }
-  }),
-  [safeAsync, fetchMissingReports, fetchNotifications, user]
-);
+    }),
+    [safeAsync, fetchMissingReports, fetchNotifications, user]
+  );
 
   const formatDate = useCallback((dateString) => {
     try {
@@ -733,6 +733,13 @@ useEffect(() => {
             onPress={handleCrowdStatusNavigation}
           >
             <Text style={styles.buttonText}>Crowd Status</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => router.push("/SchoolDataScreen")}
+          >
+            <Text style={styles.buttonText}>School Data</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

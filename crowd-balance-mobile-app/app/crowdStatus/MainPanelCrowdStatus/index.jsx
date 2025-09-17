@@ -509,6 +509,7 @@ const MainPanelScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Location Name"
+              placeholderTextColor="#837f7fff"
               value={newLocationName}
               onChangeText={setNewLocationName}
             />
@@ -516,6 +517,7 @@ const MainPanelScreen = () => {
             <TextInput
               style={styles.input}
               placeholder="Capacity"
+              placeholderTextColor="#837f7fff"
               value={newLocationCapacity}
               onChangeText={setNewLocationCapacity}
               keyboardType="numeric"
