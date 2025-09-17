@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../config";
 
@@ -138,7 +137,9 @@ const GetLostInfo = () => {
         gender: formData.gender,
         image: photo ? `data:image/jpeg;base64,${photo.base64}` : null, // Convert to base64 data URL
         lastseenlocation: formData.location.trim(),
-        description: formData.description.trim() ? [formData.description.trim()] : [], // Convert to array as expected by backend
+        description: formData.description.trim()
+          ? [formData.description.trim()]
+          : [], // Convert to array as expected by backend
         UserId: userId,
       };
 
@@ -241,7 +242,7 @@ const GetLostInfo = () => {
           </View>
         </View>
 
-        <View style={styles.inputContainer}>
+        {/* <View style={styles.inputContainer}>
           <Text style={styles.label}>Gender *</Text>
           <View style={styles.pickerContainer}>
             <Picker
@@ -253,6 +254,45 @@ const GetLostInfo = () => {
               <Picker.Item label="Male" value="Male" />
               <Picker.Item label="Female" value="Female" />
             </Picker>
+          </View>
+        </View> */}
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Gender *</Text>
+          <View style={styles.genderOptions}>
+            <TouchableOpacity
+              style={[
+                styles.genderOption,
+                formData.gender === "Male" && styles.genderOptionSelected,
+              ]}
+              onPress={() => handleInputChange("gender", "Male")}
+            >
+              <Text
+                style={[
+                  styles.genderOptionText,
+                  formData.gender === "Male" && styles.genderOptionTextSelected,
+                ]}
+              >
+                Male
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.genderOption,
+                formData.gender === "Female" && styles.genderOptionSelected,
+              ]}
+              onPress={() => handleInputChange("gender", "Female")}
+            >
+              <Text
+                style={[
+                  styles.genderOptionText,
+                  formData.gender === "Female" &&
+                    styles.genderOptionTextSelected,
+                ]}
+              >
+                Female
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -372,22 +412,22 @@ const styles = StyleSheet.create({
     height: 100,
     paddingTop: 12,
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    backgroundColor: "white",
-  },
-  picker: {
-    ...Platform.select({
-      ios: {
-        height: 200, // enough space for iOS spinner
-      },
-      android: {
-        height: 50, // typical dropdown height
-      },
-    }),
-  },
+  // pickerContainer: {
+  //   borderWidth: 1,
+  //   borderColor: "#d1d5db",
+  //   borderRadius: 8,
+  //   backgroundColor: "white",
+  // },
+  // picker: {
+  //   ...Platform.select({
+  //     ios: {
+  //       height: 200, // enough space for iOS spinner
+  //     },
+  //     android: {
+  //       height: 50, // typical dropdown height
+  //     },
+  //   }),
+  // },
   photoContainer: {
     alignItems: "flex-start",
   },
@@ -434,6 +474,31 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  genderOptions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  genderOption: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 12,
+    alignItems: "center",
+    backgroundColor: "white",
+  },
+  genderOptionSelected: {
+    borderColor: "#1e40af",
+    backgroundColor: "#eff6ff",
+  },
+  genderOptionText: {
+    fontSize: 16,
+    color: "#374151",
+  },
+  genderOptionTextSelected: {
+    color: "#1e40af",
+    fontWeight: "600",
   },
 });
 
