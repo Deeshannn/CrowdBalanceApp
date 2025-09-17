@@ -64,8 +64,8 @@ const OrganizerLocationScreen = () => {
         locationsResponse.json(),
       ]);
 
-      console.log("Organizers API Response:", organizersResult);
-      console.log("Locations API Response:", locationsResult);
+    //   console.log("Organizers API Response:", organizersResult);
+    //   console.log("Locations API Response:", locationsResult);
 
       // Handle organizers data with better error handling
       let allOrganizers = [];
@@ -265,7 +265,7 @@ const OrganizerLocationScreen = () => {
           </Text>
         </View>
         <View style={styles.locationBadges}>
-          {locationData.locationDetails && (
+          {/* {locationData.locationDetails && (
             <View
               style={[
                 styles.crowdBadge,
@@ -280,7 +280,7 @@ const OrganizerLocationScreen = () => {
                 {getCurrentCrowdLevel(locationData.locationDetails)}
               </Text>
             </View>
-          )}
+          )} */}
           <View style={styles.countBadge}>
             <Text style={styles.countText}>
               {locationData.organizers.length}
@@ -291,9 +291,9 @@ const OrganizerLocationScreen = () => {
 
       {locationData.locationDetails && (
         <View style={styles.locationDetails}>
-          <Text style={styles.locationDetail}>
+          {/* <Text style={styles.locationDetail}>
             ID: {locationData.locationDetails._id || "Unknown"}
-          </Text>
+          </Text> */}
           <Text style={styles.locationDetail}>
             Capacity:{" "}
             {locationData.locationDetails.capacity || "Unknown"} people
