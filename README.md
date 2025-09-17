@@ -20,10 +20,10 @@ npx expo install expo-sms
 
 
 
-Note: To delete actovity log more than 1 hour data, a user must send current level update to the backend (not auto updating)
 
 
 
 
-Note: npx expo start --tunnel
-to use different network connections accessible for same qr code in localhost.
+
+
+crowd-balance-mobile-app-production-7c3f.up.railway.app
