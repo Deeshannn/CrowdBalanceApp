@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
@@ -31,6 +31,13 @@ const CarParksScreen = () => {
     fetchParks();
   }, []);
 
+  // Poll every 5 seconds for near real-time updates
+  const pollRef = useRef(null);
+  useEffect(() => {
+    pollRef.current = setInterval(fetchParks, 5000);
+    return () => clearInterval(pollRef.current);
+  }, []);
+
   const updateCurrent = async (parkId, newCount) => {
     try {
       const res = await axios.patch(`${API_BASE_URL}/car-parks/${parkId}/current`, { currentCars: newCount });
@@ -53,19 +60,18 @@ const CarParksScreen = () => {
           <Text style={[styles.count, { color }]}>{item.currentCars}/{item.capacity}</Text>
         </View>
 
-        <View style={styles.controls}>
+        <View style={styles.progressRow}>
+          <View style={[styles.progressBar, { backgroundColor: '#e6e6e6' }]}>
+            <View style={{ width: `${Math.round(percent*100)}%`, backgroundColor: color, height: '100%', borderRadius: 6 }} />
+          </View>
+        </View>
+
+        <View style={styles.controlsRow}>
           <TouchableOpacity
-            style={styles.smallBtn}
+            style={[styles.bigBtn, { backgroundColor: '#ef4444' }]}
             onPress={() => updateCurrent(item._id, Math.max(0, item.currentCars - 1))}
           >
-            <Text style={styles.smallBtnText}>-</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.smallBtn}
-            onPress={() => updateCurrent(item._id, Math.min(item.capacity, item.currentCars + 1))}
-          >
-            <Text style={styles.smallBtnText}>+</Text>
+            <Text style={styles.bigBtnText}>-</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -73,6 +79,13 @@ const CarParksScreen = () => {
             onPress={() => router.push(`/CarParks/${item._id}`)}
           >
             <Text style={styles.detailsText}>Details</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.bigBtn, { backgroundColor: '#16a34a' }]}
+            onPress={() => updateCurrent(item._id, Math.min(item.capacity, item.currentCars + 1))}
+          >
+            <Text style={styles.bigBtnText}>+</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -118,7 +131,17 @@ const styles = StyleSheet.create({
   smallBtn: { padding: 8, backgroundColor: '#e5e7eb', borderRadius: 6, marginRight: 8 },
   smallBtnText: { fontSize: 18, fontWeight: '700' },
   detailsBtn: { padding: 8, borderRadius: 6, marginLeft: 'auto' },
-  detailsText: { color: 'white', fontWeight: '600' }
+  detailsText: { color: 'white', fontWeight: '600' },
+  progressBar: { height: 12, borderRadius: 6, overflow: 'hidden' },
+  controlsRow: { flexDirection: 'row', marginTop: 12, alignItems: 'center', justifyContent: 'space-between' },
+  bigBtn: { padding: 12, borderRadius: 8, width: 60, alignItems: 'center', justifyContent: 'center' },
+  bigBtnText: { color: 'white', fontSize: 20, fontWeight: '700' },
+  btn: { padding: 10, borderRadius: 6, marginRight: 8 }
+});
+
+// additional styles
+const more = StyleSheet.create({
+  progressRow: { marginTop: 10 },
 });
 
 export default CarParksScreen;

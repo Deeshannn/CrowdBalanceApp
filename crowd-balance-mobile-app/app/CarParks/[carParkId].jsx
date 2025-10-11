@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
@@ -24,6 +24,13 @@ const CarParkDetail = () => {
 
   useEffect(() => { fetchPark(); }, []);
 
+  // Poll for updates every 5 seconds
+  const poll = useRef(null);
+  useEffect(() => {
+    poll.current = setInterval(fetchPark, 5000);
+    return () => clearInterval(poll.current);
+  }, []);
+
   const setPercent = async (percent) => {
     if (!park) return;
     const newCount = Math.round(park.capacity * percent);
@@ -48,16 +55,16 @@ const CarParkDetail = () => {
         <Text style={[styles.count, { color }]}>{park.currentCars}/{park.capacity}</Text>
 
         <View style={styles.row}>
-          <TouchableOpacity style={styles.btn} onPress={() => setPercent(0)}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: '#e5e7eb' }]} onPress={() => setPercent(0)}>
             <Text>Empty</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btn} onPress={() => setPercent(0.25)}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: '#fee2b3' }]} onPress={() => setPercent(0.25)}>
             <Text>25%</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btn} onPress={() => setPercent(0.5)}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: '#fde68a' }]} onPress={() => setPercent(0.5)}>
             <Text>50%</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btn} onPress={() => setPercent(1)}>
+          <TouchableOpacity style={[styles.btn, { backgroundColor: '#fecaca' }]} onPress={() => setPercent(1)}>
             <Text>Full</Text>
           </TouchableOpacity>
         </View>
