@@ -269,7 +269,14 @@ const Profile = () => {
                 </Text>
               </>
             )}
-
+            {user.userType === "Organizer" && (
+              <TouchableOpacity
+                style={styles.carParksButton}
+                onPress={() => router.push('/CarParks')}
+              >
+                <Text style={styles.carParksText}>Car Parks</Text>
+              </TouchableOpacity>
+            )}
             {user.userType === "Organizer" && (
               <TouchableOpacity
                 style={styles.editButton}
@@ -423,6 +430,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
+  carParksButton: {
+    backgroundColor: '#10b981',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  carParksText: { color: 'white', fontWeight: '600', fontSize: 16 },
   loading: {
     fontSize: 18,
     color: "#555",

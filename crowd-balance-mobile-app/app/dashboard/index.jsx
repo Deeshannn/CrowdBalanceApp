@@ -740,6 +740,13 @@ const Dashboard = () => {
 
           <TouchableOpacity
             style={styles.button}
+            onPress={() => router.push('/CarParks')}
+          >
+            <Text style={styles.buttonText}>Car Parks</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.button}
             onPress={() => router.push("/SchoolDataScreen")}
           >
             <Text style={styles.buttonText}>School Data</Text>
