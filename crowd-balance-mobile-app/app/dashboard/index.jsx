@@ -17,6 +17,7 @@ import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { API_BASE_URL } from "../../config";
+import Chatbot from "../../components/Chatbot";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -35,6 +36,8 @@ const Dashboard = () => {
   const [selectedImageUri, setSelectedImageUri] = useState(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+
+  const [chatVisible, setChatVisible] = useState(false);
 
   // Auto-refresh interval for notifications
   const notificationIntervalRef = useRef(null);
@@ -441,6 +444,14 @@ const Dashboard = () => {
     };
   }, [user, fetchNotifications]);
 
+  const handleOpenChat = useCallback(() => {
+    setChatVisible(true);
+  }, []);
+
+  const handleCloseChat = useCallback(() => {
+    setChatVisible(false);
+  }, []);
+
   // Notification Banner Component
   const NotificationBanner = useCallback(({ notification, onDismiss }) => {
     const getNotificationColors = (type) => {
@@ -721,7 +732,6 @@ const Dashboard = () => {
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* Horizontal Line */}
           <View
             style={{
               borderBottomColor: "#ccc",
@@ -752,7 +762,6 @@ const Dashboard = () => {
             <Text style={styles.buttonText}>Organizer Locations</Text>
           </TouchableOpacity>
 
-          {/* Horizontal Line */}
           <View
             style={{
               borderBottomColor: "#ccc",
@@ -777,6 +786,16 @@ const Dashboard = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Floating Chat Button - Shows when chat is closed */}
+      {!chatVisible && (
+        <TouchableOpacity
+          style={styles.floatingChatButton}
+          onPress={handleOpenChat}
+        >
+          <Text style={styles.floatingChatButtonText}>💬</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Fullscreen Image Modal */}
       <Modal
@@ -823,6 +842,16 @@ const Dashboard = () => {
             </TouchableOpacity>
           )}
         </View>
+      </Modal>
+
+      {/* Chatbot Modal */}
+      <Modal
+        visible={chatVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={handleCloseChat}
+      >
+        <Chatbot onClose={handleCloseChat} userId={user?.id || user?._id} />
       </Modal>
     </>
   );
@@ -1230,6 +1259,26 @@ const styles = StyleSheet.create({
     height: screenHeight,
     maxWidth: screenWidth,
     maxHeight: screenHeight,
+  },
+  floatingChatButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#1e40af",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    zIndex: 999,
+  },
+  floatingChatButtonText: {
+    fontSize: 28,
   },
 });
 
