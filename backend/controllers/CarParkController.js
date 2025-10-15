@@ -63,9 +63,22 @@ const getCarParkById = async (req, res) => {
   }
 };
 
+// Delete car park (main panel)
+const deleteCarPark = async (req, res) => {
+  try {
+    const { carParkId } = req.params;
+    const park = await CarPark.findByIdAndDelete(carParkId);
+    if (!park) return res.status(404).json({ success: false, message: 'Car park not found' });
+    res.status(200).json({ success: true, message: 'Car park deleted', data: { _id: carParkId } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error deleting car park', error: err.message });
+  }
+};
+
 module.exports = {
   getAllCarParks,
   addCarPark,
   updateCurrentCars,
   getCarParkById,
+  deleteCarPark,
 };
