@@ -20,6 +20,17 @@ import { API_BASE_URL } from "../../config";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+const HorizontalLine = () => (
+  <View
+    style={{
+      borderBottomColor: "#ccc",
+      borderBottomWidth: 1,
+      marginVertical: 10,
+      marginHorizontal: 5,
+    }}
+  />
+);
+
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -721,15 +732,8 @@ const Dashboard = () => {
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* Horizontal Line */}
-          <View
-            style={{
-              borderBottomColor: "#ccc",
-              borderBottomWidth: 1,
-              marginVertical: 10,
-              marginHorizontal: 5,
-            }}
-          />
+          
+          <HorizontalLine />
 
           <TouchableOpacity
             style={styles.button}
@@ -737,6 +741,8 @@ const Dashboard = () => {
           >
             <Text style={styles.buttonText}>Crowd Status</Text>
           </TouchableOpacity>
+
+          <HorizontalLine />
 
           <TouchableOpacity
             style={styles.button}
@@ -753,6 +759,8 @@ const Dashboard = () => {
               <Text style={styles.buttonText}>Car Parks (Admin)</Text>
             </TouchableOpacity>
           )}
+
+          <HorizontalLine />
 
           <TouchableOpacity
             style={styles.button}
