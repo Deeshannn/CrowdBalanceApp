@@ -9,6 +9,7 @@ const missingReportRouter = require("./routes/MissingReportRoutes");
 const locationRoutes = require("./routes/LocationRoutes");
 const notificationRouter = require("./routes/NotificationRoutes");
 const schoolRoutes = require('./routes/SchoolRoutes');
+const carParkRoutes = require('./routes/CarParkRoutes');
 const cors = require("cors");
 
 const app = express();
@@ -25,6 +26,7 @@ app.use("/missing-reports", missingReportRouter);
 app.use("/locations", locationRoutes);
 app.use("/notifications", notificationRouter);
 app.use('/schools', schoolRoutes);
+app.use('/car-parks', carParkRoutes);
 
 // Health check endpoint 
 app.get("/", (req, res) => {
