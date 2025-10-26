@@ -10,10 +10,15 @@ const locationRoutes = require("./routes/LocationRoutes");
 const notificationRouter = require("./routes/NotificationRoutes");
 const schoolRoutes = require('./routes/SchoolRoutes');
 const carParkRoutes = require('./routes/CarParkRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+
 const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// const chatRoutes = require('./routes/chat');
+// app.use('/api', chatRoutes);
 
 // Middleware
 app.use(express.json({ limit: "50mb" })); // Increased limit for base64 images
@@ -27,6 +32,7 @@ app.use("/locations", locationRoutes);
 app.use("/notifications", notificationRouter);
 app.use('/schools', schoolRoutes);
 app.use('/car-parks', carParkRoutes);
+app.use('/api', chatRoutes);
 
 // Health check endpoint 
 app.get("/", (req, res) => {
