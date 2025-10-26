@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // Your n8n webhook URL - UPDATE THIS
 // const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://ridmal.app.n8n.cloud/webhook-test/87e75c26-5a46-4b20-ac6f-756094ebe547';
-const N8N_WEBHOOK_URL = 'https://ridmal.app.n8n.cloud/webhook/87e75c26-5a46-4b20-ac6f-756094ebe547';
+const N8N_WEBHOOK_URL = 'https://ridmal2.app.n8n.cloud/webhook/c7b46a2a-decc-42ef-b401-c0fef57ef63e';
 
 
 // Send message to n8n chatbot
