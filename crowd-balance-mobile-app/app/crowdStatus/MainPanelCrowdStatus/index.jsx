@@ -1,3 +1,21 @@
+/**
+ * Main Panel Crowd Status Screen
+ * Displays a list of locations with their crowd status and activities.
+ * Allows adding new locations and deleting existing ones.
+ * 
+ * 
+ * functions:
+ * - fetchLocations: Fetches the list of locations and their activities from the backend.
+ * - addNewLocation: Adds a new location to the backend.
+ * - deleteLocation: Deletes a location from the backend.
+ * - handleLocationPress: Navigates to the detailed view of a location.
+ * - getCrowdLevel: Determines the crowd level based on activity reports.
+ * - renderCrowdChart: Renders a visual chart of crowd activity levels.
+ * - renderLocationItem: Renders each location item in the list.
+ * - onRefresh: Handles pull-to-refresh action.
+ * - Auto-refresh: Automatically refreshes the data every 60 seconds.
+ * 
+ */
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -73,8 +91,8 @@ const MainPanelScreen = () => {
                 );
 
                 return {
-                  ...location,
-                  activities: sortedActivities,
+                  ...location, // spread existing location properties 
+                  activities: sortedActivities, // add sorted activities 
                 };
               }
 
