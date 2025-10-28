@@ -76,7 +76,7 @@ const Dashboard = () => {
 
       try {
         const response = await axios.get(`${API_BASE_URL}/missing-reports/`, {
-          timeout: 10000,
+          timeout: 20000,
         });
 
         if (response.data && response.data.reports && isMountedRef.current) {
