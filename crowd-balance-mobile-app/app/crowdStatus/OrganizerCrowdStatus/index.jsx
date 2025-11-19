@@ -1,3 +1,27 @@
+/**
+ * OrganizerCrowdStatus.jsx
+ * 
+ * This screen allows event organizers to view and update the crowd status
+ * of various locations in real-time. Organizers can see calculated crowd
+ * levels based on user reports and can manually set the crowd level for each location.
+ * 
+ * Features:
+ * - Fetch and display a list of locations with their current crowd status.
+ * - Show calculated crowd scores based on user activity logs.
+ * - Allow organizers to update the crowd level (Low, Moderate, High) for each location.
+ * - Refresh control to reload the latest data. 
+ * 
+ *
+ * functions:
+ * - fetchLocations: Fetch the list of locations from the API.
+ * - getTotalCrowdDataFromActivityLog: Calculate total crowd scores from activity logs.
+ * - getCurrentCrowdLevel: Determine the current crowd level for a location.
+ * - updateCrowdScore: Send updated crowd level to the API.
+ * - confirmCrowdUpdate: Show confirmation alert before updating crowd level.
+ * - formatTimeAgo: Format timestamps to show relative time (e.g., "5m ago").
+ */
+
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -33,7 +57,7 @@ const OrganizerScreen = () => {
     }
 
     const counts = activityLog.reduce(
-      (acc, activity) => {
+      (acc, activity) => { // acc: Accumulator
         switch (activity.crowdLevel) {
           case "min":
             acc.minCrowdScore += 1;
@@ -87,10 +111,11 @@ const OrganizerScreen = () => {
 
       if (result.success) {
         // Filter out any potentially corrupted location data
+        // Valid location object should have location idText, name and capacity
         const validLocations = result.data.filter(location => 
           location && location._id && location.name && location.capacity
         );
-        setLocations(validLocations);
+        setLocations(validLocations); // set locations to valid data only
         console.log(`Loaded ${validLocations.length} valid locations`);
       } else {
         Alert.alert("Error", "Failed to fetch locations");
@@ -108,10 +133,11 @@ const OrganizerScreen = () => {
     console.log("Location id: " + locationId, "Crowd level: " + crowdLevel);
 
     try {
+      // Update the crowd status
       const response = await fetch(
         `${API_BASE_URL}/locations/${locationId}/crowd`,
         {
-          method: "PATCH",
+          method: "PATCH", // only modify specific set of changes
           headers: {
             "Content-Type": "application/json",
           },
@@ -143,7 +169,7 @@ const OrganizerScreen = () => {
 
     Alert.alert(
       "Update Crowd Level",
-      `Mark "${locationName}" as ${levelText} crowded?`,
+      `Mark "${locationName}" as ${levelText} crowded?`, // Mark SmartCity as High crowded?
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -284,9 +310,9 @@ const OrganizerScreen = () => {
       </View>
 
       <FlatList
-        data={locations}
-        renderItem={renderLocationItem}
-        keyExtractor={(item) => item._id}
+        data={locations} // An array of data to be rendered
+        renderItem={renderLocationItem} // A function that takes one item from the data array and returns a React element to render
+        keyExtractor={(item) => item._id} // A function that returns a unique key for each item.
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

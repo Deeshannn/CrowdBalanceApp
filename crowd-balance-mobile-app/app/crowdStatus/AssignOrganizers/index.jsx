@@ -1,3 +1,21 @@
+/**
+ * AssignOrganizers.jsx
+ * 
+ * This component allows admin users to assign available organizers to locations
+ * with low crowd levels. It fetches organizer and location data from the API,
+ * filters available organizers and those assigned to low crowd locations,
+ * and provides UI for assignment and unassignment of organizers.
+ * 
+ * 
+ * functions:
+ * - fetchData: Fetches organizers and locations data from the API.
+ * - checkIfLocationHasLowCrowd: Determines if a location has low crowd level.
+ * - getCurrentCrowdLevel: Retrieves the current crowd level of a location.
+ * - handleAssignOrganizer: Initiates the assignment of an organizer.
+ * 
+ */
+
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,

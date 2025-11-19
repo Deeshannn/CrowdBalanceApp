@@ -1,3 +1,19 @@
+/**
+ * LocationDetails.jsx
+ * 
+ * This component displays detailed information about a specific location,
+ * including its crowd status, recent activity feed, assigned organizers,
+ * and provides functionalities to clear activity reports and unassign organizers.
+ * 
+ * functions:
+ * - fetchLocationDetails: Fetches location details, activities, and assigned organizers from the backend.
+ * - handleClearActivities: Clears all activity reports for the location.
+ * - handleUnassignOrganizer: Unassigns an organizer from the location.
+ * - renderClearModal: Renders a confirmation modal for clearing activities.
+ * - renderUnassignModal: Renders a confirmation modal for unassigning an organizer.
+ * 
+ */
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
