@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "crowd-balance-mobile-app",
-    "slug": "crowd-balance-mobile-app",
+    "name": "EngEx",
+    "slug": "engex",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "crowdbalancemobileapp",
+    "scheme": "engex",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": false,
+      "package": "com.ridmal.engex"
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +38,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d33c48bb-c3b1-44a5-b145-a26923cbd64b"
+      }
     }
   }
 }

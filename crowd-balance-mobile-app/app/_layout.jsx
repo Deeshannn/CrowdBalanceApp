@@ -3,6 +3,7 @@ import AppStatusBar from "../components/StatusBar/StatusBar";
 
 function RootLayout() {
   console.log("RootLayout rendered");
+  console.log("*".repeat(50));
 
   return (
     <>
@@ -33,6 +34,9 @@ function RootLayout() {
         />
 
         <Stack.Screen name="crowdStatus" options={{ headerShown: false }} />
+        <Stack.Screen name="SchoolDataScreen/index" options={{ headerShown: false }} />
+        <Stack.Screen name="OrganizerLocations/index" options={{ headerShown: false }} />
+
       </Stack>
     </>
   );

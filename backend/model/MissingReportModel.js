@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const missingReportSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: false
     },
     age: {
         type: Number,
@@ -16,7 +16,7 @@ const missingReportSchema = new mongoose.Schema({
     },
     image: {
         type: String, // Store as base64 string or file path/URL
-        required: true
+        required: false
     },
     lastseenlocation: {
         type: String,
@@ -24,7 +24,7 @@ const missingReportSchema = new mongoose.Schema({
     },
     description: {
         type: [String],
-        required: true
+        required: false
     },
     UserId: {
         type: mongoose.Schema.Types.ObjectId,
