@@ -24,6 +24,7 @@ jobs:
         run: |
           npm install
           npm run build --if-present
+          
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -54,3 +55,4 @@ jobs:
           app-name: 'Crowd-Balance-Mobile-App'
           slot-name: 'Production'
           package: .
+
