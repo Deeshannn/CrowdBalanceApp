@@ -15,11 +15,16 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Construct MongoDB URI from environment variables
+const MONGODB_URI = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_CLUSTER}/${process.env.MONGODB_DATABASE}`;
+
 // Debug: Check if environment variables are loaded
-if (!process.env.MONGODB_URI) {
+if (!process.env.MONGODB_USERNAME || !process.env.MONGODB_PASSWORD) {
+  console.error('Missing MongoDB credentials!');
   process.exit(1);
 }
 console.log('Environment variables loaded successfully');
+console.log('MongoDB Cluster:', process.env.MONGODB_CLUSTER);
 
 // Middleware
 app.use(express.json({ limit: "50mb" }));
@@ -49,10 +54,7 @@ app.get("/", (req, res) => {
 
 // Connect to MongoDB database
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB!");
     return app.listen(PORT);
